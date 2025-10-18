@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # install_dev_tools.sh
 # Idempotent installer for Docker, Docker Compose v2, Python (>=3.9), and Django (pip)
 # Target: Ubuntu / Debian
@@ -172,32 +172,42 @@ install_python() {
 
 # ------------- Django (pip --user) -------------
 install_django() {
-  if command_exists django-admin; then
-    ok "Django already installed: $(django-admin --version)"
-    return
+  VENV_DIR="$HOME/.venvs/devops"
+
+  # Ensure the venv tool is available
+  if ! dpkg -s python3-venv >/dev/null 2>&1; then
+    log "Installing python3-venv..."
+    apt_update_once
+    $SUDO apt-get install -y python3-venv
   fi
 
-  log "Installing Django for current user via pip..."
-  if command_exists pip3; then
-    python3 -m pip install --user --upgrade pip >/dev/null 2>&1 || true
-    python3 -m pip install --user "Django>=4.0" >/dev/null
+  # Create the virtual environment if missing
+  if [ ! -d "$VENV_DIR" ]; then
+    log "Creating Python virtual environment at $VENV_DIR..."
+    python3 -m venv "$VENV_DIR"
+  fi
+
+  # Install Django inside the venv if not present yet
+  if [ ! -x "$VENV_DIR/bin/django-admin" ]; then
+    log "Installing Django in the virtual environment (no global changes)..."
+    bash -c "source \"$VENV_DIR/bin/activate\" && \
+             pip install --upgrade pip && \
+             pip install 'Django>=4.2'"
+    ok "Django installed in venv: $("$VENV_DIR/bin/django-admin" --version)"
   else
-    err "pip3 not found even after installation attempt."
-    exit 1
+    ok "Django already present in venv: $("$VENV_DIR/bin/django-admin" --version)"
   fi
 
-  # Ensure ~/.local/bin in PATH for django-admin
-  if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
-    warn "Add ~/.local/bin to PATH so 'django-admin' is available:"
-    echo '  echo '\''export PATH="$HOME/.local/bin:$PATH"'\'' >> ~/.bashrc && source ~/.bashrc'
-  fi
+  PY_VER="$("$VENV_DIR/bin/python" --version 2>&1 || true)"
+  DJ_VER="$("$VENV_DIR/bin/django-admin" --version 2>/dev/null || true)"
+  log "Python in venv: $PY_VER"
+  log "Django in venv: $DJ_VER"
 
-  if command_exists django-admin; then
-    ok "Django installed: $(django-admin --version)"
-  else
-    warn "Django installed to user site-packages, but 'django-admin' not yet on PATH. See PATH note above."
-  fi
+  warn "To use this environment in the current shell, run:"
+  warn "source ~/.venvs/devops/bin/activate"
 }
+
+
 
 # ------------- main -------------
 main() {
