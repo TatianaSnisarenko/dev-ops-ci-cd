@@ -76,3 +76,100 @@ Append this to `~/.bashrc` to auto-activate the venv:
 echo 'if [ -d "$HOME/.venvs/devops" ]; then source "$HOME/.venvs/devops/bin/activate"; fi' >> ~/.bashrc
 source ~/.bashrc
 ```
+
+# 🚀 Lesson 4 — Dockerized Django + Postgres + Nginx
+
+A Docker-Compose setup for running a Django application with PostgreSQL and Nginx reverse proxy locally.
+
+## Stack
+
+- **Django** (Python 3.10-slim)
+- **PostgreSQL 14**
+- **Nginx** (reverse proxy → Django :8000)
+- **Orchestrator:** Docker Compose v2
+
+---
+
+## Requirements
+
+- Docker Desktop / Engine
+- Docker Compose v2 (`docker compose version`)
+- Use `.env-example` file to create `.env` providing all necessary configurations
+
+## Quick Start
+
+# 1) Fetch and switch to the lesson branch
+
+```
+git fetch
+git checkout lesson-4
+```
+
+# 2) Build and start all services in the background
+
+```
+docker compose up -d --build
+```
+
+After startup:
+
+Open http://localhost/
+→ served through Nginx → Django
+
+(Optional) Access Django directly via http://localhost:8000/
+
+## Stopping and Cleaning Up
+
+# Stop all containers
+
+```
+docker compose down
+```
+
+# Stop and remove the database volume (⚠ data will be lost)
+
+```
+docker compose down -v
+```
+
+## Useful Commands
+
+# Show container status
+
+```
+docker compose ps
+```
+
+# Tail logs for all services
+
+```
+docker compose logs -f
+```
+
+# Tail logs for a single service
+
+```
+docker compose logs -f django
+docker compose logs -f db
+docker compose logs -f nginx
+```
+
+# Run any Django management command
+
+```
+docker compose exec django python manage.py collectstatic --noinput
+```
+
+## How It Works
+
+Docker Compose creates an internal network so containers communicate via service names:
+
+Django connects to PostgreSQL at HOST=db, PORT=5432.
+
+Nginx proxies all HTTP traffic from port 80 to Django :8000.
+
+Exposed ports:
+
+80:80 → Nginx → http://localhost/
+
+8000:8000 → direct Django access (bypasses Nginx)
