@@ -3,8 +3,6 @@
 This project demonstrates practical usage of **Terraform** for provisioning AWS infrastructure as code (IaC).  
 The goal is to build a reusable, modular, and secure Terraform setup with remote state storage, networking, and container registry resources.
 
----
-
 ## 🎯 Objectives
 
 1. Configure a **remote backend** for Terraform using **S3** (for state) and **DynamoDB** (for state locking).
@@ -14,10 +12,9 @@ The goal is to build a reusable, modular, and secure Terraform setup with remote
    - **Elastic Container Registry (ECR)** for storing Docker images
 3. Document the setup process for reproducibility and team collaboration.
 
----
-
 ## 🗂️ Project Structure
 
+```
 lesson-5/
 │
 ├── main.tf
@@ -44,12 +41,11 @@ lesson-5/
 │ └── outputs.tf
 │
 └── README.md
-
----
+```
 
 ## ⚙️ Modules Overview
 
-### 🪣 Module: `s3-backend`
+### 🗑️ Module: `s3-backend`
 
 Creates:
 
@@ -61,8 +57,6 @@ Outputs:
 
 - S3 bucket name
 - DynamoDB table name
-
----
 
 ### 🌐 Module: `vpc`
 
@@ -79,8 +73,6 @@ Outputs:
 - VPC ID
 - Public and private subnet IDs
 
----
-
 ### 📦 Module: `ecr`
 
 Creates:
@@ -91,8 +83,6 @@ Creates:
 Outputs:
 
 - Repository URL
-
----
 
 ## 🧩 Backend Configuration
 
@@ -150,8 +140,6 @@ Instead, create a separate IAM user with only the permissions required for manag
 - Click **Create access key**
 - Choose _Application running outside AWS_
 - Save the `Access key ID` and `Secret access key` securely.
-
----
 
 ### 2. Configure AWS CLI Profile (Windows)
 
@@ -215,16 +203,10 @@ terraform apply
 
 Terraform will authenticate through your terraform IAM user using the terraform profile, ensuring secure and isolated access to AWS resources without requiring admin privileges.
 
----
-
----
-
 ## 🚀 How to Run
 
 This project uses a **remote backend** (S3 + DynamoDB) for Terraform state management.  
 If you're running this project from a fresh clone, you must first recreate the backend infrastructure locally before reconnecting to S3.
-
----
 
 ### 1️⃣ Comment out the backend
 
@@ -247,6 +229,12 @@ Terraform cannot initialize directly to an S3 backend if the bucket and DynamoDB
 This step ensures that state is handled locally until backend resources are provisioned.
 
 ### 2️⃣ Initialize and deploy infrastructure locally
+
+Navigate to lesson-5 folder
+
+```
+cd lesson-5
+```
 
 Run the following commands:
 
@@ -385,12 +373,9 @@ Any remaining AWS resources declared in your configuration.
 
 ```bash
 terraform state list
-terraform plan -refresh-only
 ```
 
-Both commands should show no remaining resources.
-
----
+Command should show no remaining resources.
 
 ## 📸 Screenshots (Verification Results)
 
@@ -420,30 +405,17 @@ Both commands should show no remaining resources.
 
 ## 🛡️ Best Practices
 
-Use a dedicated IAM user for Terraform with minimal permissions.
-
-Store state remotely (S3 + DynamoDB) — never commit terraform.tfstate to Git.
-
-Enable versioning and encryption on your S3 bucket.
-
-Use separate workspaces or backends for dev/stage/prod environments.
-
-Rotate access keys periodically.
+- Use a dedicated IAM user for Terraform with minimal permissions.
+- Store state remotely (S3 + DynamoDB) — never commit terraform.tfstate to Git.
+- Enable versioning and encryption on your S3 bucket.
+- Use separate workspaces or backends for dev/stage/prod environments.
+- Rotate access keys periodically.
 
 ## 🧠 Learning Outcomes
 
-By completing this assignment, you will:
-
-Understand Terraform backend configuration and remote state management.
-
-Learn how to organize infrastructure into reusable modules.
-
-Practice creating AWS network resources (VPC, subnets, gateways).
-
-Deploy and manage container registry resources (ECR).
-
-Apply real-world infrastructure-as-code patterns used in professional DevOps workflows.
-
-```
-
-```
+- By completing this assignment, you will:
+- Understand Terraform backend configuration and remote state management.
+- Learn how to organize infrastructure into reusable modules.
+- Practice creating AWS network resources (VPC, subnets, gateways).
+- Deploy and manage container registry resources (ECR).
+- Apply real-world infrastructure-as-code patterns used in professional DevOps workflows.
