@@ -530,10 +530,46 @@ kubectl get hpa
 
 ✅ The Service should show TYPE = LoadBalancer and an external IP — open this IP in your browser to view the Django app.
 
-### 8️⃣ Validate HPA and Metrics
+📈 **Metrics for HPA (manual install)**
 
-Metrics Server is installed automatically by Terraform (Helm release).
-Verify:
+After a successful `terraform apply`, install etrics Server manually:
+
+1. Grant yourself EKS admin access
+
+```bash
+PRINCIPAL_ARN=$(aws sts get-caller-identity --profile terraform --query Arn --output text)
+aws eks create-access-entry --cluster-name lesson-7-eks --principal-arn "$PRINCIPAL_ARN" --type STANDARD --profile terraform --region eu-north-1
+aws eks associate-access-policy --cluster-name lesson-7-eks --principal-arn "$PRINCIPAL_ARN" \
+  --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy \
+  --access-scope type=cluster --profile terraform --region eu-north-1
+
+```
+
+2. Ensure kubeconfig is configured
+
+```bash
+aws eks update-kubeconfig --name lesson-7-eks --region eu-north-1 --profile terraform
+```
+
+3. Install Metrics Server
+
+```bash
+helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server
+helm repo update
+```
+
+```
+helm upgrade --install metrics-server metrics-server/metrics-server --namespace kube-system --set "args[0]=--kubelet-preferred-address-types=InternalIP" --set "args[1]=--kubelet-insecure-tls" --set hostNetwork=true   --wait --timeout 5m
+```
+
+4. Verify metrics
+
+```bash
+kubectl -n kube-system get deploy metrics-server
+kubectl top nodes
+```
+
+### 8️⃣ Validate HPA and Metrics
 
 ````bash
 kubectl get deployment metrics-server -n kube-system
