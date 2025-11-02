@@ -30,3 +30,19 @@ variable "max_size" {
   type        = number
   default     = 2
 }
+
+variable "manage_aws_auth" {
+  description = "Manage aws-auth ConfigMap to map IAM users/roles"
+  type        = bool
+  default     = false
+}
+
+variable "map_users" {
+  description = "List of IAM users mapped to Kubernetes groups via aws-auth"
+  type = list(object({
+    userarn  = string
+    username = string
+    groups   = list(string)
+  }))
+  default = []
+}

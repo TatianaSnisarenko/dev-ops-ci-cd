@@ -494,19 +494,25 @@ kubectl get hpa
 
 ✅ The Service should show TYPE = LoadBalancer and an external IP — open this IP in your browser to view the Django app.
 
-8️⃣ Validate HPA and metrics
+### 8️⃣ Validate HPA and Metrics
 
-If HPA metrics are unavailable, install the Metrics Server:
+Metrics Server is installed automatically by Terraform (Helm release).
+Verify:
 
-helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
-helm repo update
-helm upgrade --install metrics-server metrics-server/metrics-server \
- --namespace kube-system
-
-Then check:
-
+````bash
+kubectl get deployment metrics-server -n kube-system
+kubectl top nodes
 kubectl top pods
 kubectl get hpa
+
+If TARGETS in kubectl get hpa is unknown, wait 1–2 minutes for metrics to populate.
+(Optional) Generate some load to observe scaling:
+
+```bash
+kubectl port-forward svc/django-app 8080:80
+ab -n 2000 -c 50 http://localhost:8080/
+kubectl get hpa -w
+```
 
 9️⃣ Cleanup
 
@@ -514,7 +520,7 @@ To delete the deployment and test again later:
 
 ```bash
 helm uninstall django-app
-```
+````
 
 🧹 Proper teardown when using an S3 backend (with DynamoDB locking)
 
