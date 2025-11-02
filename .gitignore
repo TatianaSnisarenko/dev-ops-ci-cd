@@ -235,6 +235,9 @@ terraform.tfvars
 terraform.tfvars.json
 # Plan outputs
 *.plan
+*.tfplanF
+.terraform.lock.hcl
+tfplan
 
 # --- Kubernetes / Helm ---
 # K8s secrets and temporary manifests
