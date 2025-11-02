@@ -58,6 +58,8 @@ module "ecr" {
   scan_on_push = true
 }
 
+data "aws_caller_identity" "current" {}
+
 module "eks" {
   source = "./modules/eks"
 
@@ -86,28 +88,65 @@ module "eks" {
 
 # --- EKS connection data ---
 data "aws_eks_cluster" "this" {
-  name = module.eks.cluster_name
-}
-data "aws_eks_cluster_auth" "this" {
-  name = module.eks.cluster_name
+  name       = module.eks.cluster_name
+  depends_on = [module.eks]
 }
 
-# --- Kubernetes provider (kubectl-style ops from Terraform) ---
+data "aws_eks_cluster_auth" "this" {
+  name       = module.eks.cluster_name
+  depends_on = [module.eks]
+}
+
+# Ensure aws-auth mapping exists (runs locally; requires eksctl or kubectl+aws)
+// ...existing code...
+resource "null_resource" "ensure_aws_auth" {
+  provisioner "local-exec" {
+    command = <<EOT
+aws eks update-kubeconfig --name ${module.eks.cluster_name} --region eu-north-1 --profile terraform
+eksctl create iamidentitymapping --cluster ${module.eks.cluster_name} --region eu-north-1 --profile terraform --arn ${data.aws_caller_identity.current.arn} --username terraform --group system:masters || true
+EOT
+  }
+
+  depends_on = [module.eks]
+}
+
+# Kubernetes provider
 provider "kubernetes" {
   host                   = data.aws_eks_cluster.this.endpoint
   cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.this.token
+
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = ["eks","get-token","--cluster-name", module.eks.cluster_name, "--region", "eu-north-1"]
+    env = {
+      AWS_PROFILE = "terraform"
+      AWS_REGION  = "eu-north-1"
+    }
+  }
 }
 
-# --- Helm provider (to install charts like Metrics Server) ---
+# Helm provider
 provider "helm" {
   kubernetes {
     host                   = data.aws_eks_cluster.this.endpoint
     cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
-    token                  = data.aws_eks_cluster_auth.this.token
-    load_config_file       = false
+
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = ["eks","get-token","--cluster-name", module.eks.cluster_name, "--region", "eu-north-1"]
+      env = {
+        AWS_PROFILE = "terraform"
+        AWS_REGION  = "eu-north-1"
+      }
+    }
   }
+
+  repository_cache       = "${path.root}/.helm/cache"
+  repository_config_path = "${path.root}/.helm/repositories.yaml"
 }
+
 
 # ------------------------------
 # Install Metrics Server (for HPA)
@@ -119,20 +158,42 @@ resource "helm_release" "metrics_server" {
   chart      = "metrics-server"
   version    = "3.12.1"
 
+  force_update      = true
+  dependency_update = true
+
   namespace        = "kube-system"
   create_namespace = false
   wait             = true
   timeout          = 300
 
-  depends_on = [module.eks]
+  set {
+    name  = "args[0]"
+    value = "--kubelet-preferred-address-types=InternalIP"
+  }
+  set {
+    name  = "args[1]"
+    value = "--kubelet-insecure-tls"
+  }
+  set {
+    name  = "hostNetwork"
+    value = "true"
+  }
+
+  depends_on = [
+    module.eks,
+    data.aws_eks_cluster.this,
+    data.aws_eks_cluster_auth.this,
+    null_resource.ensure_aws_auth,
+  ]
 }
 
-# (Optional) Quick metrics smoke test after apply
+# Quick metrics smoke test after apply
 resource "null_resource" "smoke_metrics" {
   provisioner "local-exec" {
-    command = "kubectl top nodes || echo 'metrics not ready yet'"
+    command = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --region eu-north-1 --profile terraform --alias lesson-7-eks && kubectl top nodes || echo 'metrics not ready yet'"
   }
 
   depends_on = [helm_release.metrics_server]
 }
+
 

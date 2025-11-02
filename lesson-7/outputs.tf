@@ -46,7 +46,19 @@ output "eks_cluster_endpoint" {
   value       = module.eks.cluster_endpoint
 }
 
-output "eks_node_group_name" {
-  description = "Name of the default managed node group"
-  value       = module.eks.node_group_name
+output "eks_cluster_ca_data" {
+  value     = module.eks.cluster_certificate_authority_data
+  sensitive = true
 }
+
+output "eks_cluster_version"           { value = module.eks.cluster_version }
+output "eks_cluster_sg_id"             { value = module.eks.cluster_security_group_id }
+output "eks_node_shared_sg_id"         { value = module.eks.node_security_group_id }
+output "eks_oidc_provider_arn"         { value = module.eks.oidc_provider_arn }
+output "eks_mng_keys"                  { value = module.eks.mng_keys }
+output "eks_mng_asg_names"             { value = module.eks.mng_asg_names }
+
+output "aws_eks_update_kubeconfig_cmd" {
+  value = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --region eu-north-1 --profile terraform"
+}
+

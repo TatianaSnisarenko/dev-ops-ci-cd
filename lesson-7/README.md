@@ -219,26 +219,62 @@ Instead, create a separate IAM user with only the permissions required for manag
 
 #### Steps:
 
-1. Open **AWS Management Console → IAM → Users → Create user**
-2. Enter the username: terraform
-3. Select **Access type → Programmatic access** (CLI/API only, no Console login).
-4. Create a new **user group** named `terraform-lab` and attach the following managed policies:
+### 🧩 Step 1 — Base group: `terraform-lab`
 
-| **Policy**                             | **Purpose**                                                                    |
-| -------------------------------------- | ------------------------------------------------------------------------------ |
-| `AmazonS3FullAccess`                   | Manage S3 bucket for Terraform remote state                                    |
-| `AmazonDynamoDBFullAccess_v2`          | Manage DynamoDB table for state locking                                        |
-| `AmazonEC2FullAccess`                  | Create and manage VPC, subnets, gateways, and EC2 networking resources         |
-| `AmazonEKSClusterPolicy`               | Create and manage EKS clusters                                                 |
-| `AmazonEKSServicePolicy`               | Allow EKS control plane integration with other AWS services                    |
-| `AmazonEKSWorkerNodePolicy`            | Allow nodes to connect and register with the EKS cluster                       |
-| `AmazonEKS_CNI_Policy`                 | Manage networking for EKS pods (CNI plugin)                                    |
-| `AmazonEC2ContainerRegistryFullAccess` | Push/pull Docker images in Amazon ECR                                          |
-| `CloudWatchFullAccessV2`               | Monitor and log cluster and infrastructure metrics                             |
-| `IAMFullAccess`                        | Create and manage IAM roles, instance profiles, and policies used by Terraform |
+This group contains basic permissions for Terraform backend and networking.
 
-5. Add the user `terraform` to the group `terraform-lab`.
-6. Generate **Access Keys** for this user:
+1. In the AWS Console go to **IAM → User groups → Create group**.  
+   Name the group: `terraform-lab`
+
+2. Attach the following AWS managed policies to the group:
+
+   - `AmazonS3FullAccess` — for storing Terraform state in S3
+   - `AmazonDynamoDBFullAccess` — for Terraform state locking (use this name; avoid a non-standard `_v2` suffix)
+   - `AmazonEC2FullAccess` — for creating EC2 resources, VPC, subnets, NAT, routing
+   - `AmazonEC2ContainerRegistryFullAccess` — for building and pushing Docker images to ECR
+
+3. Create IAM user `terraform`:
+
+   - Access type: **Programmatic access (CLI/API only)**
+   - Add user `terraform` to group `terraform-lab`
+
+4. Generate Access Keys for CLI use:
+   - IAM → Users → `terraform` → **Security credentials** → **Create access key** → _Application running outside AWS_
+   - Save `Access key ID` and `Secret access key` securely — used by the Terraform AWS provider.
+
+---
+
+### 🏗 Step 2 — Provisioning group: `terraform-provisioners`
+
+This group contains additional permissions required to provision EKS and related resources.
+
+1. In IAM → User groups → Create group, name it `terraform-provisioners`.
+
+2. Attach these AWS managed policies:
+
+   - `AmazonVPCFullAccess` — for networking components used by EKS
+   - `CloudWatchFullAccess` (or the appropriate CloudWatch managed policy/version for your account) — for EKS log groups
+   - `IAMFullAccess` — to create IAM roles and attach policies used by the EKS module
+   - `AWSKeyManagementServicePowerUser` — optional, only if EKS cluster encryption with KMS is enabled
+
+3. Attach a customer-managed policy `TerraformEKSProvision` (create this beforehand) which should include at least:
+
+   - `eks:*` for managing clusters and node groups (or scoped least-privilege equivalents)
+   - `iam:PassRole` limited to EKS-related roles
+   - Access to S3 and DynamoDB backend resources used by Terraform
+   - Minimal CloudWatch Logs permissions
+
+4. Add the same IAM user `terraform` to this group:
+   - IAM → Users → `terraform` → **Groups** → Add to `terraform-provisioners`
+
+Notes
+
+- Prefer least-privilege policies in production; the above managed policies are convenient for labs.
+- Verify the user via `aws sts get-caller-identity --profile terraform` after configuring the AWS CLI.
+
+### 🏗 Step 3
+
+Generate **Access Keys** for this user:
 
 - Navigate to `IAM → Users → terraform → Security credentials`
 - Click **Create access key**
