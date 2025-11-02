@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "django-app.fullname" . }}
+  labels:
+    app: {{ include "django-app.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "django-app.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "django-app.name" . }}
+    spec:
+      containers:
+        - name: django
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          # Pull non-secret env from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: {{ include "django-app.fullname" . }}-config
+{{- if .Values.secret.existingName }}
+            - secretRef:
+                name: {{ .Values.secret.existingName }}
+{{- else if .Values.secret.enabled }}
+            - secretRef:
+                name: {{ include "django-app.fullname" . }}-secret
+{{- end }}
+          # Resources are required for HPA on CPU%
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu | quote }}
+              memory: {{ .Values.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu | quote }}
+              memory: {{ .Values.resources.limits.memory | quote }}
+          # Basic probes (good practice)
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: 20
+            periodSeconds: 20

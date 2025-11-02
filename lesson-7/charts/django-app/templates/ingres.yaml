@@ -1,0 +1,27 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "django-app.fullname" . }}
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  {{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+      secretName: {{ include "django-app.fullname" . }}-tls
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.path }}
+            pathType: {{ .Values.ingress.pathType }}
+            backend:
+              service:
+                name: {{ include "django-app.fullname" . }}
+                port:
+                  number: {{ .Values.service.port }}
+{{- end }}

@@ -1,0 +1,48 @@
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "django-app.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "django-app.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "django-app.fullname" . }}
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+  {{- if .Values.autoscaling.enableMemory }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage | default 75 }}
+  {{- end }}
+  {{- if .Values.autoscaling.behavior.enabled }}
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: {{ .Values.autoscaling.behavior.scaleUp.stabilizationWindowSeconds | default 0 }}
+      policies:
+        - type: Percent
+          value: {{ .Values.autoscaling.behavior.scaleUp.maxPercent | default 100 }}
+          periodSeconds: {{ .Values.autoscaling.behavior.scaleUp.periodSeconds | default 60 }}
+    scaleDown:
+      stabilizationWindowSeconds: {{ .Values.autoscaling.behavior.scaleDown.stabilizationWindowSeconds | default 300 }}
+      policies:
+        - type: Percent
+          value: {{ .Values.autoscaling.behavior.scaleDown.maxPercent | default 100 }}
+          periodSeconds: {{ .Values.autoscaling.behavior.scaleDown.periodSeconds | default 60 }}
+  {{- end }}
+{{- end }}
