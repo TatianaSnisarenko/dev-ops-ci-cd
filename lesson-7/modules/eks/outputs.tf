@@ -35,8 +35,13 @@ output "cluster_primary_security_group_id" {
 }
 
 output "node_group_role_arn" {
-  value       = try(module.eks.eks_managed_node_group_iam_role_name[var.node_group_name], null) != null ? module.eks.eks_managed_node_group_iam_role_arn[var.node_group_name] : null
+  value       = try(module.eks.eks_managed_node_group_iam_role_arn[var.node_group_name], null)
   description = "IAM Role ARN of the default managed node group"
+}
+
+output "kubectl_update_command" {
+  value       = "aws eks update-kubeconfig --name ${module.eks.cluster_name}"
+  description = "Handy command to configure kubectl for this cluster"
 }
 
 output "eks_access_entries_info" {

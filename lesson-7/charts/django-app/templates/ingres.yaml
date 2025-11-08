@@ -4,17 +4,15 @@ kind: Ingress
 metadata:
   name: {{ include "django-app.fullname" . }}
   annotations:
-    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    {{- if .Values.ingress.tls }}
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    {{- end }}
 spec:
-  {{- if .Values.ingress.tls }}
-  tls:
-    - hosts:
-        - {{ .Values.ingress.host }}
-      secretName: {{ include "django-app.fullname" . }}-tls
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className | quote }}
   {{- end }}
   rules:
-    - host: {{ .Values.ingress.host }}
+    - host: {{ .Values.ingress.host | quote }}
       http:
         paths:
           - path: {{ .Values.ingress.path }}
@@ -24,4 +22,10 @@ spec:
                 name: {{ include "django-app.fullname" . }}
                 port:
                   number: {{ .Values.service.port }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host | quote }}
+      secretName: {{ include "django-app.fullname" . }}-tls
+  {{- end }}
 {{- end }}

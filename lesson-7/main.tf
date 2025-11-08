@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.9.0"
+  required_version = ">= 1.6.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -49,12 +49,9 @@ provider "helm" {
   }
 }
 
-
-
 ############################
 # Modules
 ############################
-
 
 module "s3_backend" {
   source      = "./modules/s3-backend"
@@ -65,30 +62,30 @@ module "s3_backend" {
 module "vpc" {
   source             = "./modules/vpc"
   vpc_cidr_block     = "10.0.0.0/16"
-  public_subnets     = ["10.0.1.0/24","10.0.2.0/24","10.0.3.0/24"]
-  private_subnets    = ["10.0.4.0/24","10.0.5.0/24","10.0.6.0/24"]
-  availability_zones = ["eu-north-1a","eu-north-1b","eu-north-1c"]
+  public_subnets     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  private_subnets    = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
+  availability_zones = ["eu-north-1a", "eu-north-1b", "eu-north-1c"]
   vpc_name           = "lab-vpc"
 }
 
 module "ecr" {
   source       = "./modules/ecr"
-  ecr_name     = "lab-ecr"
+  ecr_name     = var.ecr_repository_name
   scan_on_push = true
 }
+
 module "eks" {
   source = "./modules/eks"
 
-  cluster_name   = var.cluster_name
+  cluster_name    = var.cluster_name
   cluster_version = var.cluster_version
 
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
 
   enable_cluster_creator_admin_permissions = true
-
-  enable_admin_access = true
-  admin_iam_arns     = var.admin_iam_arns
+  enable_admin_access                      = true
+  admin_iam_arns                           = var.admin_iam_arns
 
   node_group_name = "ng-default"
   instance_types  = var.instance_types
@@ -101,7 +98,7 @@ module "eks" {
 }
 
 ############################
-# Metrics Server Helm Release
+# Metrics Server Helm Release (needed for HPA)
 ############################
 resource "helm_release" "metrics_server" {
   name       = "metrics-server"
@@ -114,5 +111,3 @@ resource "helm_release" "metrics_server" {
 
   depends_on = [module.eks]
 }
-
-

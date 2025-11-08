@@ -22,27 +22,16 @@ module "eks" {
   vpc_id     = var.vpc_id
   subnet_ids = var.private_subnet_ids
 
-  # Сучасний спосіб доступу
-  authentication_mode                         = var.authentication_mode
-  enable_cluster_creator_admin_permissions    = var.enable_cluster_creator_admin_permissions
+  authentication_mode                      = var.authentication_mode
+  enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
+  enable_irsa                              = var.enable_irsa
 
-  # Базові аддони кластера
   cluster_addons = {
-    vpc-cni = {
-      most_recent = true
-    }
-    kube-proxy = {
-      most_recent = true
-    }
-    coredns = {
-      most_recent = true
-    }
-    eks-pod-identity-agent = {
-      most_recent = true
-    }
+    vpc-cni                = { most_recent = true }
+    kube-proxy             = { most_recent = true }
+    coredns                = { most_recent = true }
+    eks-pod-identity-agent = { most_recent = true }
   }
-
-  enable_irsa = var.enable_irsa
 
   eks_managed_node_groups = {
     (var.node_group_name) = {
@@ -53,7 +42,6 @@ module "eks" {
       min_size     = var.min_size
       desired_size = var.desired_size
       max_size     = var.max_size
-
     }
   }
 
@@ -61,13 +49,10 @@ module "eks" {
     for arn in var.admin_iam_arns :
     replace(arn, ":", "-") => {
       principal_arn = arn
-
       policy_associations = {
         cluster_admin = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          access_scope = {
-            type = "cluster"
-          }
+          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = { type = "cluster" }
         }
       }
     }
@@ -75,9 +60,9 @@ module "eks" {
 
   tags = merge(
     {
-      "Project"     = "lesson-7"
-      "Environment" = "dev"
-      "Module"      = "eks"
+      Project     = "lesson-7"
+      Environment = "dev"
+      Module      = "eks"
     },
     var.tags
   )

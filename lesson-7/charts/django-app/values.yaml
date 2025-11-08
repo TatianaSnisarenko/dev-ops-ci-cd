@@ -1,100 +1,39 @@
-# -----------------------------
-# Optional name overrides
-# Leave empty unless you want to override default naming logic
-# -----------------------------
 nameOverride: ""
 fullnameOverride: ""
 
-# -----------------------------
-# Image configuration
-# -----------------------------
 image:
-  # Replace during install:
-  # --set image.repository=$(terraform -chdir=../../ output -raw ecr_repository_url)
   repository: "<ECR_REPOSITORY_URL>"
   tag: "latest"
   pullPolicy: IfNotPresent
 
-# -----------------------------
-# Service configuration
-# -----------------------------
+replicaCount: 2
+
 service:
-  # For external access in AWS
   type: LoadBalancer
   port: 80
   targetPort: 8000
 
-# -----------------------------
-# Base replicas (HPA can scale)
-# -----------------------------
-replicaCount: 2
-
-# -----------------------------
-# Autoscaling (HPA)
-# Keep modest limits for t3.small
-# -----------------------------
-autoscaling:
-  enabled: true
-  minReplicas: 1
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 70
-
-  enableMemory: false
-  targetMemoryUtilizationPercentage: 75
-
-  behavior:
-    enabled: true
-    scaleUp:
-      stabilizationWindowSeconds: 0
-      maxPercent: 100
-      periodSeconds: 60
-    scaleDown:
-      stabilizationWindowSeconds: 300
-      maxPercent: 100
-      periodSeconds: 60
-
-# -----------------------------
-# Resources (HPA needs CPU requests)
-# -----------------------------
 resources:
   requests:
     cpu: "100m"
     memory: "128Mi"
   limits:
-    cpu: "250m"
-    memory: "256Mi"
+    cpu: "500m"
+    memory: "512Mi"
 
-# -----------------------------
-# Non-secret environment (ConfigMap)
-# Put only non-sensitive values here
-# -----------------------------
-env:
-  DJANGO_SETTINGS_MODULE: "myproject.settings"
-  DEBUG: "False"
-  POSTGRES_HOST: "db"
-  POSTGRES_PORT: "5432"
-  POSTGRES_DB: "django_db"
+env: {}
 
-# -----------------------------
-# Secret handling (Option A)
-# DO NOT commit real secrets to Git.
-# Create a local override file (values-secrets.local.yaml) and add it to .gitignore.
-# Example (local file):
-# secret:
-#   enabled: true
-#   existingName: ""
-#   data:
-#     POSTGRES_USER: "django_user"
-#     POSTGRES_PASSWORD: "django_password"
-# -----------------------------
 secret:
-  enabled: false # set to true only in your local override file
-  existingName: "" # if set, chart will use this existing Secret instead of creating one
-  data: {} # key/value pairs placed ONLY in local override file (not in Git)
+  enabled: false
+  existingName: ""
+  data: {}
 
-# -----------------------------
-# Ingress (bonus)
-# -----------------------------
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
 ingress:
   enabled: false
   className: "nginx"

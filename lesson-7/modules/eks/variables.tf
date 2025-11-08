@@ -9,7 +9,6 @@ variable "cluster_version" {
   default     = "1.30"
 }
 
-
 variable "vpc_id" {
   description = "Existing VPC ID to place the EKS cluster into"
   type        = string
