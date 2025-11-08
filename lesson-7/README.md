@@ -362,7 +362,7 @@ Before the first run, open `\lesson-7\backend.tf` and temporarily disable the ba
 # terraform {
 #   backend "s3" {
 #     bucket         = "terraform-state-bucket-a3f7d92c"
-#     key            = "lesson-7/terraform.tfstate"
+#     key            = "lab/terraform.tfstate"
 #     region         = "eu-north-1"
 #     dynamodb_table = "terraform-locks"
 #     encrypt        = true
@@ -411,7 +411,7 @@ Once all resources are created, uncomment the backend configuration in backend.t
 terraform {
   backend "s3" {
     bucket         = "terraform-state-bucket-a3f7d92c"
-    key            = "lesson-7/terraform.tfstate"
+    key            = "lab/terraform.tfstate"
     region         = "eu-north-1"
     dynamodb_table = "terraform-locks"
     encrypt        = true
@@ -451,7 +451,7 @@ No changes. Infrastructure is up-to-date.
 
 In AWS Console:
 
-S3 → you should see the file lesson-7/terraform.tfstate in bucket terraform-state-bucket-a3f7d92c
+S3 → you should see the file lab/terraform.tfstate in bucket terraform-state-bucket-a3f7d92c
 
 DynamoDB → table terraform-locks will briefly show a LockID during Terraform operations
 
@@ -538,8 +538,8 @@ After a successful `terraform apply`, install etrics Server manually:
 
 ```bash
 PRINCIPAL_ARN=$(aws sts get-caller-identity --profile terraform --query Arn --output text)
-aws eks create-access-entry --cluster-name lesson-7-eks --principal-arn "$PRINCIPAL_ARN" --type STANDARD --profile terraform --region eu-north-1
-aws eks associate-access-policy --cluster-name lesson-7-eks --principal-arn "$PRINCIPAL_ARN" \
+aws eks create-access-entry --cluster-name lab-eks --principal-arn "$PRINCIPAL_ARN" --type STANDARD --profile terraform --region eu-north-1
+aws eks associate-access-policy --cluster-name lab-eks --principal-arn "$PRINCIPAL_ARN" \
   --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy \
   --access-scope type=cluster --profile terraform --region eu-north-1
 
@@ -548,7 +548,7 @@ aws eks associate-access-policy --cluster-name lesson-7-eks --principal-arn "$PR
 2. Ensure kubeconfig is configured
 
 ```bash
-aws eks update-kubeconfig --name lesson-7-eks --region eu-north-1 --profile terraform
+aws eks update-kubeconfig --name lab-eks --region eu-north-1 --profile terraform
 ```
 
 3. Install Metrics Server
@@ -611,7 +611,7 @@ Follow these steps to safely destroy all infrastructure, including backend resou
 # terraform {
 #   backend "s3" {
 #     bucket         = "terraform-state-bucket-XXXX"
-#     key            = "lesson-7/terraform.tfstate"
+#     key            = "lab/terraform.tfstate"
 #     region         = "eu-north-1"
 #     dynamodb_table = "terraform-locks"
 #     encrypt        = true

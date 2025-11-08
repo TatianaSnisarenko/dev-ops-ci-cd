@@ -16,7 +16,7 @@ provider "aws" {
   default_tags {
     tags = {
       Project     = "devops"
-      Environment = "lesson-7"
+      Environment = "lab"
     }
   }
 }
@@ -33,12 +33,12 @@ module "vpc" {
   public_subnets     = ["10.0.1.0/24","10.0.2.0/24","10.0.3.0/24"]
   private_subnets    = ["10.0.4.0/24","10.0.5.0/24","10.0.6.0/24"]
   availability_zones = ["eu-north-1a","eu-north-1b","eu-north-1c"]
-  vpc_name           = "lesson-7-vpc"
+  vpc_name           = "lab-vpc"
 }
 
 module "ecr" {
   source       = "./modules/ecr"
-  ecr_name     = "lesson-7-ecr"
+  ecr_name     = "lab-ecr"
   scan_on_push = true
 }
 
@@ -47,7 +47,7 @@ data "aws_caller_identity" "current" {}
 module "eks" {
   source = "./modules/eks"
 
-  cluster_name = "lesson-7-eks"
+  cluster_name = "lab-eks"
   vpc_id       = module.vpc.vpc_id
   subnet_ids   = module.vpc.private_subnet_ids
 
