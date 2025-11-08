@@ -111,3 +111,82 @@ resource "helm_release" "metrics_server" {
 
   depends_on = [module.eks]
 }
+
+############################################
+# RDS PostgreSQL (module)
+############################################
+module "rds_postgres" {
+  source             = "./modules/rds-postgres"
+  cluster_name       = var.cluster_name
+  vpc_id             = module.vpc.vpc_id
+  vpc_cidr_block     = module.vpc.vpc_cidr_block
+  private_subnet_ids = module.vpc.private_subnet_ids
+
+  db_name         = var.db_name
+  master_username = var.db_username
+
+}
+
+############################################
+# Kubernetes Secret with DB creds for Django
+############################################
+resource "kubernetes_secret_v1" "django_db" {
+  count = var.create_db_secret ? 1 : 0
+  provider = kubernetes.eks
+
+  metadata {
+    name      = var.db_secret_name
+    namespace = var.k8s_namespace
+  }
+
+  data = {
+    DB_HOST     = module.rds_postgres.endpoint
+    DB_PORT     = tostring(module.rds_postgres.port)
+    DB_NAME     = module.rds_postgres.db_name
+    DB_USER     = module.rds_postgres.master_username
+    DB_PASSWORD = module.rds_postgres.master_password
+
+    DATABASE_URL = "postgresql://${module.rds_postgres.master_username}:${module.rds_postgres.master_password}@${module.rds_postgres.endpoint}:${module.rds_postgres.port}/${module.rds_postgres.db_name}"
+  }
+
+  type = "Opaque"
+}
+
+resource "kubernetes_secret_v1" "django_db" {
+  count    = var.create_db_secret ? 1 : 0
+  provider = kubernetes.eks
+
+  metadata {
+    name      = var.db_secret_name 
+    namespace = var.k8s_namespace  
+  }
+
+  data = {
+    DB_HOST     = module.rds_postgres.endpoint
+    DB_PORT     = tostring(module.rds_postgres.port)
+    DB_NAME     = module.rds_postgres.db_name
+    DB_USER     = module.rds_postgres.master_username
+    DB_PASSWORD = module.rds_postgres.master_password
+
+    POSTGRES_HOST     = module.rds_postgres.endpoint
+    POSTGRES_PORT     = tostring(module.rds_postgres.port)
+    POSTGRES_DB       = module.rds_postgres.db_name
+    POSTGRES_USER     = module.rds_postgres.master_username
+    POSTGRES_PASSWORD = module.rds_postgres.master_password
+
+    DATABASE_URL = "postgresql://${module.rds_postgres.master_username}:${module.rds_postgres.master_password}@${module.rds_postgres.endpoint}:${module.rds_postgres.port}/${module.rds_postgres.db_name}"
+  }
+
+  type = "Opaque"
+}
+
+############################################
+# ECR repo URL for Helm (no module edits)
+############################################
+data "aws_caller_identity" "current" {}
+
+locals {
+  ecr_repository_url = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.ecr_repository_name}"
+}
+
+

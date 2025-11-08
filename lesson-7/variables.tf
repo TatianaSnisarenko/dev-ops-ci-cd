@@ -63,3 +63,37 @@ variable "tags" {
     Environment = "lab"
   }
 }
+
+############################################
+# RDS + K8s Secret vars
+############################################
+variable "db_name" {
+  description = "PostgreSQL database name"
+  type        = string
+  default     = "appdb"
+}
+
+variable "db_username" {
+  description = "PostgreSQL master username"
+  type        = string
+  default     = "appuser"
+}
+
+variable "k8s_namespace" {
+  description = "Namespace where to create DB secret"
+  type        = string
+  default     = "default"
+}
+
+variable "db_secret_name" {
+  description = "Kubernetes Secret name for DB credentials"
+  type        = string
+  default     = "django-db"
+}
+
+variable "create_db_secret" {
+  description = "Whether to create Kubernetes Secret with DB creds"
+  type        = bool
+  default     = true
+}
+

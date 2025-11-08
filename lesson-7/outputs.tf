@@ -33,3 +33,26 @@ output "metrics_server_release" {
   value       = helm_release.metrics_server.name
   description = "Deployed Helm release name for metrics-server"
 }
+
+output "rds_endpoint" {
+  description = "RDS endpoint"
+  value       = module.rds_postgres.endpoint
+}
+
+output "rds_db_name" {
+  description = "RDS database name"
+  value       = module.rds_postgres.db_name
+}
+
+output "rds_master_username" {
+  description = "RDS master username"
+  value       = module.rds_postgres.master_username
+}
+
+output "rds_sg_id" {
+  description = "RDS Security Group ID"
+  value       = module.rds_postgres.security_group_id
+}
+
+
+
