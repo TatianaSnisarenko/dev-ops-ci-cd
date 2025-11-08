@@ -180,13 +180,5 @@ resource "kubernetes_secret_v1" "django_db" {
   type = "Opaque"
 }
 
-############################################
-# ECR repo URL for Helm (no module edits)
-############################################
-data "aws_caller_identity" "current" {}
-
-locals {
-  ecr_repository_url = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.ecr_repository_name}"
-}
 
 

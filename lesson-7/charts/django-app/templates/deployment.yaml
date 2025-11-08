@@ -20,14 +20,16 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.targetPort }}
+
+
           envFrom:
             - configMapRef:
                 name: {{ include "django-app.fullname" . }}-config
-            {{- /* Якщо secret.enabled=true або вказаний existingName — додаємо секрет */}}
             {{- if or .Values.secret.enabled .Values.secret.existingName }}
             - secretRef:
                 name: {{ default (printf "%s-secret" (include "django-app.fullname" .)) .Values.secret.existingName }}
             {{- end }}
+
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu | quote }}
@@ -35,12 +37,14 @@ spec:
             limits:
               cpu: {{ .Values.resources.limits.cpu | quote }}
               memory: {{ .Values.resources.limits.memory | quote }}
+
           readinessProbe:
             httpGet:
               path: /
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: 10
             periodSeconds: 10
+
           livenessProbe:
             httpGet:
               path: /
