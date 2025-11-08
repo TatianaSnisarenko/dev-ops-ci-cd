@@ -1,26 +1,22 @@
 output "cluster_name" {
-  description = "EKS cluster name"
   value       = module.eks.cluster_name
+  description = "EKS cluster name"
+}
+
+output "cluster_id" {
+  value       = module.eks.cluster_id
+  description = "EKS cluster ID"
 }
 
 output "cluster_endpoint" {
-  description = "EKS cluster API endpoint"
   value       = module.eks.cluster_endpoint
+  description = "EKS API server endpoint"
 }
 
 output "cluster_certificate_authority_data" {
-  description = "Certificate authority data for the EKS cluster (Base64-encoded)"
   value       = module.eks.cluster_certificate_authority_data
-}
-
-output "cluster_security_group_id" {
-  value       = module.eks.cluster_security_group_id
-  description = "Cluster security group ID"
-}
-
-output "node_security_group_id" {
-  value       = module.eks.node_security_group_id
-  description = "Shared node security group ID"
+  sensitive   = true
+  description = "Base64-encoded cluster CA"
 }
 
 output "oidc_provider_arn" {
@@ -28,17 +24,25 @@ output "oidc_provider_arn" {
   description = "OIDC provider ARN for IRSA"
 }
 
-output "cluster_version" {
-  value       = module.eks.cluster_version
-  description = "EKS Kubernetes version"
+output "cluster_security_group_id" {
+  value       = module.eks.cluster_security_group_id
+  description = "Cluster security group ID"
 }
 
-output "mng_keys" {
-  value       = keys(module.eks.eks_managed_node_groups)
-  description = "Managed node group keys (their logical names)"
+output "cluster_primary_security_group_id" {
+  value       = module.eks.cluster_primary_security_group_id
+  description = "Primary security group ID for the cluster"
 }
 
-output "mng_asg_names" {
-  value       = module.eks.eks_managed_node_groups_autoscaling_group_names
-  description = "ASG names created by the managed node groups"
+output "node_group_role_arn" {
+  value       = try(module.eks.eks_managed_node_group_iam_role_name[var.node_group_name], null) != null ? module.eks.eks_managed_node_group_iam_role_arn[var.node_group_name] : null
+  description = "IAM Role ARN of the default managed node group"
+}
+
+output "eks_access_entries_info" {
+  value = {
+    enabled        = var.enable_admin_access
+    admin_iam_arns = var.admin_iam_arns
+  }
+  description = "Who gets cluster-admin via Access Entries"
 }

@@ -337,9 +337,11 @@ Make sure that the same region and profile are configured in your AWS CLI before
 
 Before deployment, run:
 
+```bash
 terraform init
 terraform plan
 terraform apply
+```
 
 Terraform will authenticate through your terraform IAM user using the terraform profile, ensuring secure and isolated access to AWS resources without requiring admin privileges.
 
