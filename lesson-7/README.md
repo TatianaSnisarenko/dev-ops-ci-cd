@@ -347,14 +347,17 @@ Terraform will authenticate through your terraform IAM user using the terraform 
 
 ## 🚀 How to Run
 
-This project provisions AWS infrastructure with Terraform, stores its state remotely in S3 + DynamoDB, and then deploys a Django application to an EKS cluster using Helm.
+This project provisions AWS infrastructure with Terraform (remote state in S3 + DynamoDB), then deploys a Django app to EKS with Helm.
+Infra and app deploys are separate: Terraform builds infra (incl. RDS PostgreSQL and a Kubernetes Secret django-db), Helm deploys the app using that secret and the image in ECR.
 
-- The workflow includes:
-- Creating backend storage (S3 + DynamoDB) for Terraform remote state.
-- Provisioning VPC, ECR, and EKS infrastructure.
-- Building and pushing the Docker image to ECR.
-- Deploying the Django app to EKS via Helm.
-- Validating that HPA scaling and Services work.
+**Workflow**
+
+1. Create backend storage (S3 + DynamoDB) for Terraform remote state.
+2. Provision VPC, ECR, RDS (PostgreSQL), and EKS with Terraform.
+3. Let Terraform create a Kubernetes Secret `django-db` containing DB credentials.
+4. Build and push the Docker image to ECR.
+5. Deploy the Django app to EKS via Helm, using the `django-db` secret and the ECR image URL from Terraform outputs.
+6. (Optional) Install Metrics Server and validate HPA (Horizontal Pod Autoscaler).
 
 ### 1️⃣ Comment out the backend
 
@@ -376,31 +379,25 @@ Before the first run, open `\lesson-7\backend.tf` and temporarily disable the ba
 Terraform cannot initialize directly to an S3 backend if the bucket and DynamoDB table don’t exist yet.
 This step ensures that state is handled locally until backend resources are provisioned.
 
-### 2️⃣ Initialize and deploy infrastructure locally
-
-Navigate to lesson-7 folder
+### 2️⃣ Initialize and apply locally
 
 ```
 cd lesson-7
-```
-
-Run the following commands:
-
-```
 terraform init
 terraform validate
 terraform plan -out=tfplan
 terraform apply tfplan
 ```
 
-✅ This will create all project resources, including:
+✅ ✅ This creates:
 
-- S3 bucket terraform-state-bucket-a3f7d92c for storing remote Terraform state
-- DynamoDB table terraform-locks for state locking
-- VPC, subnets, Internet Gateway, NAT gateways
-- ECR repository for container images
-- EKS cluster with one managed node group
-- IAM roles, policies, and CloudWatch resources
+- S3 bucket for state + DynamoDB table for locking
+- VPC (subnets, IGW/NAT, routes)
+- ECR repository
+- EKS cluster with a managed node group (+ admin bootstrap for creator)
+- RDS PostgreSQL (private)
+- Kubernetes Secret django-db (DB_HOST/PORT/NAME/USER/PASSWORD + DATABASE_URL) in the target namespace
+- IAM roles/policies as needed
 
 ⚠️ Note: At this stage, Terraform still uses a **local state file (terraform.tfstate)**.  
 The backend (S3 + DynamoDB) will be connected in the next step.
@@ -426,15 +423,8 @@ Reconfigure Terraform to use the remote backend and migrate the local state to S
 
 ```
 terraform init -reconfigure
+# When prompted: "Do you want to copy existing state to the new backend?" -> yes
 ```
-
-When prompted:
-
-```
-Do you want to copy existing state to the new backend? (yes)
-```
-
-Type **yes** — Terraform will upload the local terraform.tfstate file to your S3 bucket and start using it as a remote state.
 
 ### 4️⃣ Validate backend connection
 
@@ -445,16 +435,10 @@ terraform state list
 terraform plan
 ```
 
-Expected output:
-
-```
-No changes. Infrastructure is up-to-date.
-```
+Expected output: **No changes**
 
 In AWS Console:
-
 S3 → you should see the file lab/terraform.tfstate in bucket terraform-state-bucket-a3f7d92c
-
 DynamoDB → table terraform-locks will briefly show a LockID during Terraform operations
 
 ### 5️⃣ Configure access to the cluster
@@ -467,7 +451,7 @@ aws eks update-kubeconfig --name "$(terraform output -raw eks_cluster_name)" --r
 kubectl get nodes
 ```
 
-Expected output: one or more nodes in Ready state.
+Expected output: **one or more nodes in Ready state.**
 
 ## 6️⃣ Build and push the Django image to ECR
 
@@ -488,38 +472,16 @@ Build and push:
 
 ```bash
 cd ../../django
-docker build -t django-app:latest .
-docker tag django-app:latest "$ECR_URL:latest"
-docker push "$ECR_URL:latest"
+TAG="v1"
+docker build -t "$ECR_URL:$TAG" .
+docker push "$ECR_URL:$TAG"
 ```
 
-7️⃣ Deploy the application via Helm
-
-Return to your chart directory:
+7️⃣ Deploy the Django app via Helm (uses Terraform secret)
 
 ```bash
-cd ../lesson-7/charts/django-app
-```
-
-Before running Helm, ensure your local secrets file exists (ignored by Git):
-
-```bash
-lesson-7/charts/django-app/values.secret.local.yaml
-```
-
-```yaml
-secret:
-enabled: true
-existingName: ""
-data:
-POSTGRES_USER: "django_user"
-POSTGRES_PASSWORD: "pass9764gd"
-```
-
-Now deploy using Terraform output for the ECR image:
-
-```bash
-helm upgrade --install django-app ./charts/django-app -f charts/django-app/values.yaml -f charts/django-app/values.secret.local.yaml --set image.repository=$(terraform -chdir=../../ output -raw ecr_repository_url)
+cd lesson-7/charts/django-app
+helm upgrade --install django ./ --namespace default --create-namespace --set image.repository="$(terraform -chdir=../.. output -raw ecr_repository_url)" --set image.tag="$TAG" -f values.yaml -f values.rds.yaml
 ```
 
 Check deployment status:
@@ -532,61 +494,42 @@ kubectl get hpa
 
 ✅ The Service should show TYPE = LoadBalancer and an external IP — open this IP in your browser to view the Django app.
 
-📈 **Metrics for HPA (manual install)**
+8️⃣ (Optional) Install Metrics Server for HPA
 
-After a successful `terraform apply`, install etrics Server manually:
-
-1. Grant yourself EKS admin access
-
-```bash
-PRINCIPAL_ARN=$(aws sts get-caller-identity --profile terraform --query Arn --output text)
-aws eks create-access-entry --cluster-name lab-eks --principal-arn "$PRINCIPAL_ARN" --type STANDARD --profile terraform --region eu-north-1
-aws eks associate-access-policy --cluster-name lab-eks --principal-arn "$PRINCIPAL_ARN" \
-  --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy \
-  --access-scope type=cluster --profile terraform --region eu-north-1
-
-```
-
-2. Ensure kubeconfig is configured
-
-```bash
-aws eks update-kubeconfig --name lab-eks --region eu-north-1 --profile terraform
-```
-
-3. Install Metrics Server
+If HPA targets show unknown, install Metrics Server:
 
 ```bash
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server
 helm repo update
+helm upgrade --install metrics-server metrics-server/metrics-server \
+  --namespace kube-system \
+  --set "args[0]=--kubelet-preferred-address-types=InternalIP" \
+  --set "args[1]=--kubelet-insecure-tls" \
+  --wait --timeout 5m
 ```
 
-```
-helm upgrade --install metrics-server metrics-server/metrics-server --namespace kube-system --set "args[0]=--kubelet-preferred-address-types=InternalIP" --set "args[1]=--kubelet-insecure-tls" --set hostNetwork=true   --wait --timeout 5m
-```
-
-4. Verify metrics
+Validate:
 
 ```bash
 kubectl -n kube-system get deploy metrics-server
 kubectl top nodes
+kubectl top pods -n default
+kubectl get hpa -n default
 ```
 
-### 8️⃣ Validate HPA and Metrics
+If TARGETS stay unknown, wait 1–2 minutes for metrics to populate.
 
-````bash
-kubectl get deployment metrics-server -n kube-system
-kubectl top nodes
-kubectl top pods
-kubectl get hpa
-
-If TARGETS in kubectl get hpa is unknown, wait 1–2 minutes for metrics to populate.
-(Optional) Generate some load to observe scaling:
+9️⃣ (Optional) Generate load to see scaling
 
 ```bash
-kubectl port-forward svc/django-app 8080:80
+# port-forward to local and stress with ab or wrk
+kubectl -n default port-forward svc/django 8080:80 &
 ab -n 2000 -c 50 http://localhost:8080/
-kubectl get hpa -w
+kubectl -n default get hpa -w
 ```
+
+✅ Done.
+Infra is in Terraform (with remote state), DB creds are delivered via the django-db Kubernetes Secret created by Terraform, the app image comes from ECR, and the app is deployed by Helm independently of Terraform.
 
 9️⃣ Cleanup
 
@@ -594,7 +537,7 @@ To delete the deployment and test again later:
 
 ```bash
 helm uninstall django-app
-````
+```
 
 🧹 Proper teardown when using an S3 backend (with DynamoDB locking)
 
