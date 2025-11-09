@@ -1,3 +1,8 @@
+variable "vpc_cidr_block" {
+  type    = string
+  default = "10.0.0.0/16"
+}
+
 terraform {
   required_version = ">= 1.6.0"
   required_providers {
@@ -13,6 +18,15 @@ terraform {
       source  = "hashicorp/helm"
       version = ">= 2.13.2"
     }
+    http = {
+      source  = "hashicorp/http"
+      version = ">= 3.4.0"
+    }
+    random = { 
+      source = "hashicorp/random"
+       version = ">= 3.5.0"
+        }
+    
   }
 }
 
@@ -35,6 +49,16 @@ data "aws_eks_cluster_auth" "this" {
   depends_on = [module.eks]
 }
 
+data "http" "my_ip" {
+  url = "https://checkip.amazonaws.com/"
+}
+
+locals {
+  name        = var.cluster_name
+  my_ip_cidr  = "${chomp(data.http.my_ip.response_body)}/32"
+}
+
+
 provider "kubernetes" {
   host                   = data.aws_eks_cluster.this.endpoint
   cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
@@ -47,6 +71,9 @@ provider "helm" {
     cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
     token                  = data.aws_eks_cluster_auth.this.token
   }
+
+  repository_cache       = "${path.root}/.helm/cache"
+  repository_config_path = "${path.root}/.helm/repositories.yaml"
 }
 
 ############################
@@ -61,7 +88,7 @@ module "s3_backend" {
 
 module "vpc" {
   source             = "./modules/vpc"
-  vpc_cidr_block     = "10.0.0.0/16"
+  vpc_cidr_block     = var.vpc_cidr_block
   public_subnets     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
   private_subnets    = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
   availability_zones = ["eu-north-1a", "eu-north-1b", "eu-north-1c"]
@@ -94,6 +121,10 @@ module "eks" {
   max_size        = var.max_size
   disk_size       = var.disk_size
 
+  cluster_endpoint_private_access      = true
+  cluster_endpoint_public_access       = true
+  cluster_endpoint_public_access_cidrs = [local.my_ip_cidr]
+
   tags = var.tags
 }
 
@@ -109,21 +140,55 @@ resource "helm_release" "metrics_server" {
   namespace        = "kube-system"
   create_namespace = false
 
+  wait            = true
+  timeout         = 600
+  atomic          = true
+  cleanup_on_fail = true
+
+  values = [
+    yamlencode({
+      hostNetwork = { enabled = false }   # було true → зробимо false
+      args = [
+        "--kubelet-insecure-tls"
+      ]
+      resources = {
+        limits   = { cpu = "100m", memory = "128Mi" }
+        requests = { cpu = "50m",  memory = "64Mi" }
+      }
+      replicas = 1
+    })
+  ]
+
   depends_on = [module.eks]
 }
+
 
 ############################################
 # RDS PostgreSQL (module)
 ############################################
+
+resource "random_password" "rds_master" {
+  length           = 24
+  min_lower        = 1
+  min_upper        = 1
+  min_numeric      = 1
+  min_special      = 1
+
+  special          = true
+  override_special = "!#$%&()*+,-.:;<=>?[]^_{|}~\\"
+}
+
+
 module "rds_postgres" {
-  source             = "./modules/rds-postgres"
+  source             = "./modules/rds"
   cluster_name       = var.cluster_name
   vpc_id             = module.vpc.vpc_id
-  vpc_cidr_block     = module.vpc.vpc_cidr_block
+  vpc_cidr_block     = var.vpc_cidr_block
   private_subnet_ids = module.vpc.private_subnet_ids
 
   db_name         = var.db_name
   master_username = var.db_username
+  master_password = random_password.rds_master.result
 
 }
 
@@ -131,31 +196,7 @@ module "rds_postgres" {
 # Kubernetes Secret with DB creds for Django
 ############################################
 resource "kubernetes_secret_v1" "django_db" {
-  count = var.create_db_secret ? 1 : 0
-  provider = kubernetes.eks
-
-  metadata {
-    name      = var.db_secret_name
-    namespace = var.k8s_namespace
-  }
-
-  data = {
-    DB_HOST     = module.rds_postgres.endpoint
-    DB_PORT     = tostring(module.rds_postgres.port)
-    DB_NAME     = module.rds_postgres.db_name
-    DB_USER     = module.rds_postgres.master_username
-    DB_PASSWORD = module.rds_postgres.master_password
-
-    DATABASE_URL = "postgresql://${module.rds_postgres.master_username}:${module.rds_postgres.master_password}@${module.rds_postgres.endpoint}:${module.rds_postgres.port}/${module.rds_postgres.db_name}"
-  }
-
-  type = "Opaque"
-}
-
-resource "kubernetes_secret_v1" "django_db" {
   count    = var.create_db_secret ? 1 : 0
-  provider = kubernetes.eks
-
   metadata {
     name      = var.db_secret_name 
     namespace = var.k8s_namespace  
@@ -178,6 +219,12 @@ resource "kubernetes_secret_v1" "django_db" {
   }
 
   type = "Opaque"
+
+  depends_on = [
+    module.eks,
+    data.aws_eks_cluster.this,
+    data.aws_eks_cluster_auth.this
+  ]
 }
 
 

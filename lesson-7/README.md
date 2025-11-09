@@ -385,6 +385,11 @@ This step ensures that state is handled locally until backend resources are prov
 cd lesson-7
 terraform init
 terraform validate
+
+# create repo files and update cache (once)
+helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server
+helm repo update
+
 terraform plan -out=tfplan
 terraform apply tfplan
 ```

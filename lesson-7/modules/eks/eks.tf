@@ -8,6 +8,8 @@ terraform {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 locals {
   name = var.cluster_name
 }
@@ -25,9 +27,21 @@ module "eks" {
   authentication_mode                      = var.authentication_mode
   enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
   enable_irsa                              = var.enable_irsa
+  
+  cluster_endpoint_private_access      = var.cluster_endpoint_private_access
+  cluster_endpoint_public_access       = var.cluster_endpoint_public_access
+  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
 
   cluster_addons = {
-    vpc-cni                = { most_recent = true }
+    vpc-cni = {
+    most_recent = true
+    configuration_values = jsonencode({
+      env = {
+        ENABLE_PREFIX_DELEGATION = "true"
+        WARM_PREFIX_TARGET       = "1"
+      }
+    })
+  }
     kube-proxy             = { most_recent = true }
     coredns                = { most_recent = true }
     eks-pod-identity-agent = { most_recent = true }
@@ -60,8 +74,6 @@ module "eks" {
 
   tags = merge(
     {
-      Project     = "lesson-7"
-      Environment = "dev"
       Module      = "eks"
     },
     var.tags

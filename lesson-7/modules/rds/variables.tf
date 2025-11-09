@@ -30,6 +30,11 @@ variable "master_username" {
   default     = "appuser"
 }
 
+variable "master_password" {
+  description = "PostgreSQL database password"
+  type        = string
+}
+
 variable "instance_class" {
   description = "RDS instance class"
   type        = string

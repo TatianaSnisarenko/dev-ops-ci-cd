@@ -64,12 +64,12 @@ resource "aws_security_group" "rds" {
 resource "aws_db_instance" "this" {
   identifier                 = "${var.cluster_name}-postgres"
   engine                     = "postgres"
-  engine_version             = "16.3"
+  auto_minor_version_upgrade  = true
   instance_class             = var.instance_class
   allocated_storage          = var.allocated_storage
   db_name                    = var.db_name
   username                   = var.master_username
-  password                   = random_password.master.result
+  password                   = var.master_password
   port                       = 5432
 
   db_subnet_group_name       = aws_db_subnet_group.this.name

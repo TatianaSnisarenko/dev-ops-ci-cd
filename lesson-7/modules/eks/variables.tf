@@ -52,25 +52,25 @@ variable "node_group_name" {
 variable "instance_types" {
   description = "Instance types for the node group"
   type        = list(string)
-  default     = ["t3.medium"]
+  default     = ["t3.micro"]
 }
 
 variable "min_size" {
   type        = number
   description = "Min nodes in the node group"
-  default     = 2
+  default     = 1
 }
 
 variable "desired_size" {
   type        = number
   description = "Desired nodes in the node group"
-  default     = 2
+  default     = 1
 }
 
 variable "max_size" {
   type        = number
   description = "Max nodes in the node group"
-  default     = 6
+  default     = 2
 }
 
 variable "disk_size" {
@@ -89,4 +89,22 @@ variable "enable_irsa" {
   description = "Enable IAM Roles for Service Accounts (OIDC provider)"
   type        = bool
   default     = true
+}
+
+variable "cluster_endpoint_private_access" {
+  description = "Enable private access to EKS API endpoint"
+  type        = bool
+  default     = true
+}
+
+variable "cluster_endpoint_public_access" {
+  description = "Enable public access to EKS API endpoint"
+  type        = bool
+  default     = true
+}
+
+variable "cluster_endpoint_public_access_cidrs" {
+  description = "Allowed CIDRs for public EKS endpoint"
+  type        = list(string)
+  default     = []  # значення підставимо у root-рівні
 }
