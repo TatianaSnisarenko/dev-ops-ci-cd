@@ -36,7 +36,7 @@ variable "ecr_repository_name" {
 
 variable "instance_types" {
   type    = list(string)
-  default = ["t3.micro"]
+  default = ["t3.small"]
 }
 
 variable "min_size" {

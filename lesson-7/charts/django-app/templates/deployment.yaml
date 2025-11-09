@@ -5,7 +5,7 @@ metadata:
   labels:
     app: {{ include "django-app.name" . }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.replicaCount | default 1 }}
   selector:
     matchLabels:
       app: {{ include "django-app.name" . }}
@@ -17,37 +17,54 @@ spec:
       containers:
         - name: django
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: {{ .Values.service.targetPort }}
-
-
-          envFrom:
-            - configMapRef:
-                name: {{ include "django-app.fullname" . }}-config
-            {{- if or .Values.secret.enabled .Values.secret.existingName }}
-            - secretRef:
-                name: {{ default (printf "%s-secret" (include "django-app.fullname" .)) .Values.secret.existingName }}
+            - name: http
+              containerPort: {{ .Values.containerPort | default 8000 }}
+          env:
+            - name: ALLOWED_HOSTS
+              value: "*"
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
             {{- end }}
-
-          resources:
-            requests:
-              cpu: {{ .Values.resources.requests.cpu | quote }}
-              memory: {{ .Values.resources.requests.memory | quote }}
-            limits:
-              cpu: {{ .Values.resources.limits.cpu | quote }}
-              memory: {{ .Values.resources.limits.memory | quote }}
-
+          envFrom:
+            - secretRef:
+                name: {{ .Values.dbSecretName | default "django-db" }}
           readinessProbe:
             httpGet:
               path: /
-              port: {{ .Values.service.targetPort }}
+              port: http
             initialDelaySeconds: 10
             periodSeconds: 10
-
           livenessProbe:
             httpGet:
               path: /
-              port: {{ .Values.service.targetPort }}
+              port: http
             initialDelaySeconds: 20
             periodSeconds: 20
+          {{- with .Values.resources }}
+          resources:
+{{ toYaml . | nindent 12 }}
+          {{- end }}
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+    httpHeaders:
+      - name: Host
+        value: localhost        # ← ключове
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+    httpHeaders:
+      - name: Host
+        value: localhost        # ← ключове
+  initialDelaySeconds: 20
+  periodSeconds: 20
+

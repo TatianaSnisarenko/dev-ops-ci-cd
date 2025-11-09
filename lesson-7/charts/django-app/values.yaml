@@ -3,10 +3,11 @@ fullnameOverride: ""
 
 image:
   repository: ""
-  tag: "latest"
+  tag: ""
   pullPolicy: IfNotPresent
 
-replicaCount: 2
+replicaCount: 1
+containerPort: 8000
 
 service:
   type: LoadBalancer
@@ -39,4 +40,5 @@ secret:
   enabled: false
   existingName: "django-db"
 
-env: {}
+env:
+  DJANGO_ALLOWED_HOSTS: "*"

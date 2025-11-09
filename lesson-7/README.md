@@ -463,38 +463,42 @@ Expected output: **one or more nodes in Ready state.**
 Retrieve the repository URL:
 
 ```bash
-ECR_URL=$(terraform output -raw ecr_repository_url)
+$ECR_URL = terraform output -raw ecr_repository_url
 echo $ECR_URL
-```
-
-Authenticate Docker:
-
-```bash
-aws ecr get-login-password --region eu-north-1 --profile terraform | docker login --username AWS --password-stdin "$ECR_URL"
 ```
 
 Build and push:
 
 ```bash
-cd ../../django
-TAG="v1"
-docker build -t "$ECR_URL:$TAG" .
-docker push "$ECR_URL:$TAG"
+cd ../django
+$TAG = "v1"
+$IMAGE = $ECR_URL + ":" + $TAG
+echo $IMAGE
+docker build -t $IMAGE .
+aws ecr get-login-password --region eu-north-1 --profile terraform | docker login --username AWS --password-stdin $ECR_URL
+docker push $IMAGE
 ```
 
 7️⃣ Deploy the Django app via Helm (uses Terraform secret)
 
 ```bash
-cd lesson-7/charts/django-app
-helm upgrade --install django ./ --namespace default --create-namespace --set image.repository="$(terraform -chdir=../.. output -raw ecr_repository_url)" --set image.tag="$TAG" -f values.yaml -f values.rds.yaml
+cd ../lesson-7
+$repo = terraform output -raw ecr_repository_url
+cd ./charts/django-app
+helm upgrade --install django . --namespace default --create-namespace --set "image.repository=$repo" --set "image.tag=$TAG" -f values.yaml
+
 ```
 
 Check deployment status:
 
 ```bash
+# get alb ip address and navigate to see django app is running
+$elb = kubectl -n default get svc django-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+echo $elb
 kubectl get pods
 kubectl get svc
 kubectl get hpa
+kubectl get svc django-app
 ```
 
 ✅ The Service should show TYPE = LoadBalancer and an external IP — open this IP in your browser to view the Django app.
@@ -620,23 +624,23 @@ Command should show no remaining resources.
 
 ![DynamoDB](./screenshots/dynamoDb.png)
 
-### 2. VPC and Subnets
+### 2. VPC
 
 ![VPC Subnets](./screenshots/vpc.png)
 
-![VPC Subnets](./screenshots/subnets.png)
-
-### 3. NAT Gateways and Route Tables
-
-![NAT](./screenshots/nat.png)
-
-![Routes](./screenshots/routTables.png)
-
-![EIP](./screenshots/eip.png)
-
-### 4. ECR Repository
+### 3. ECR Repository
 
 ![ECR Repository](./screenshots/ecr.png)
+
+### 4. HPA
+
+![HPA](./screenshots/hpa.png)
+
+### 5. Django app
+
+![Alb address](./screenshots/alb_address.png)
+
+![Django app](./screenshots/django.png)
 
 ## 🛡️ Best Practices
 

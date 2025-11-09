@@ -1,13 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: { { include "django-app.fullname" . } }
+  name: {{ include "django-app.fullname" . }}
   labels:
-    app: { { include "django-app.name" . } }
+    app: {{ include "django-app.name" . }}
 spec:
-  type: { { .Values.service.type | quote } }
+  type: {{ .Values.service.type | default "ClusterIP" }}
   selector:
-    app: { { include "django-app.name" . } }
+    app: {{ include "django-app.name" . }}
   ports:
-    - port: { { .Values.service.port } }
-      targetPort: { { .Values.service.targetPort } }
+    - name: http
+      port: {{ .Values.service.port | default 8000 }}
+      targetPort: {{ .Values.service.targetPort | default 8000 }}
+      protocol: TCP

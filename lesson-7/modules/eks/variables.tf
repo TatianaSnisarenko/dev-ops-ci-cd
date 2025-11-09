@@ -52,25 +52,25 @@ variable "node_group_name" {
 variable "instance_types" {
   description = "Instance types for the node group"
   type        = list(string)
-  default     = ["t3.micro"]
+  default     = ["t3.small"]
 }
 
 variable "min_size" {
   type        = number
   description = "Min nodes in the node group"
-  default     = 1
+  default     = 2
 }
 
 variable "desired_size" {
   type        = number
   description = "Desired nodes in the node group"
-  default     = 1
+  default     = 3
 }
 
 variable "max_size" {
   type        = number
   description = "Max nodes in the node group"
-  default     = 2
+  default     = 3
 }
 
 variable "disk_size" {
