@@ -545,7 +545,7 @@ Infra is in Terraform (with remote state), DB creds are delivered via the django
 To delete the deployment and test again later:
 
 ```bash
-helm uninstall django-app
+helm uninstall django
 ```
 
 🧹 Proper teardown when using an S3 backend (with DynamoDB locking)
