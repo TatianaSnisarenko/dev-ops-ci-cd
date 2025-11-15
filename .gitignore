@@ -241,15 +241,14 @@ tfplan
 
 # --- Kubernetes / Helm ---
 # K8s secrets and temporary manifests
-*secret*.yaml
+values-secrets.local.yaml
 *.backup
 *.bak
 # Helm local charts or cache
-charts/
 helm-cache/
 .tmp/
-# Helm release values that may contain secrets
-values*.yaml
+
+
 
 # --- Jenkins CI ---
 # Jenkins workspace and configuration files
@@ -269,7 +268,6 @@ credentials.xml
 argo-logs/
 # Sensitive YAMLs
 applicationset.yaml
-secret*.yaml
 
 # --- Prometheus / Grafana ---
 # Local dashboards or data exports
@@ -305,3 +303,5 @@ Thumbs.db
 .envrc
 .env.local
 .env.production
+
+*.tgz
