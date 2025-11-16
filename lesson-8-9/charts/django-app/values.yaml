@@ -3,7 +3,7 @@ fullnameOverride: ""
 
 image:
   repository: "989496898833.dkr.ecr.eu-north-1.amazonaws.com/lab-ecr"
-  tag: "v1"
+  tag: v1.0.12
   pullPolicy: IfNotPresent
 
 replicaCount: 1
