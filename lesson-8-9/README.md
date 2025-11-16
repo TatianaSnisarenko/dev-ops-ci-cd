@@ -637,7 +637,8 @@ Open the hostname in the browser → Django app should respond.
 To delete the deployment and test again later:
 
 ```bash
-helm uninstall django
+kubectl delete app django-app -n argocd
+helm uninstall jenkins -n jenkins
 ```
 
 🧹 Proper teardown when using an S3 backend (with DynamoDB locking)
