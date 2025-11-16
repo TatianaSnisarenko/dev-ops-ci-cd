@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "django-app.fullname" . }}
+  labels:
+    app: {{ include "django-app.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ include "django-app.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "django-app.name" . }}
+    spec:
+      containers:
+        - name: django
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort | default 8000 }}
+          env:
+            - name: ALLOWED_HOSTS
+              value: "*"
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.dbSecretName | default "django-db" }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          {{- with .Values.resources }}
+          resources:
+{{ toYaml . | nindent 12 }}
+          {{- end }}
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+    httpHeaders:
+      - name: Host
+        value: localhost        # ← ключове
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+    httpHeaders:
+      - name: Host
+        value: localhost        # ← ключове
+  initialDelaySeconds: 20
+  periodSeconds: 20
+
