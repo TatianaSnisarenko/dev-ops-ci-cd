@@ -27,7 +27,7 @@ dev-ops-ci-cd/
 │   │   └── wsgi.py
 │   └── .env.example
 │
-├── lesson-7/
+├── lesson-8-9/
 │   ├── charts/
 │   │   └── django-app/
 │   │       ├── Chart.yaml
@@ -65,9 +65,28 @@ dev-ops-ci-cd/
 │   │       |   ├── variables.tf
 │   │       |   └── outputs.tf
 │   │       └── eks/
-│   │           ├── eks.tf
-│   │           ├── variables.tf
-│   │           └── outputs.tf
+│   │       |   ├── eks.tf
+│   │       |   ├── variables.tf
+│   │       |   └── outputs.tf
+|   |       ├── jenkins/
+│   │       |   ├── jenkins.tf
+│   │       |   ├── variables.tf
+│   │       |   ├── providers.tf
+│   │       |   ├── values.yaml
+│   │       |   └── outputs.tf
+│   │       |
+│   |       └── argo_cd/             # ✅ Новий модуль для Helm-установки Argo CD
+│   |           ├── argo_cd.tf       # Helm release для Jenkins
+│   |           ├── variables.tf     # Змінні (версія чарта, namespace, repo URL тощо)
+│   |           ├── providers.tf     # Kubernetes+Helm.  переносимо з модуля jenkins
+│   |           ├── values.yaml      # Кастомна конфігурація Argo CD
+│   |           ├── outputs.tf       # Виводи (hostname, initial admin password)
+│	 |          └──charts/                  # Helm-чарт для створення app'ів
+│ 	 |	            ├── Chart.yaml
+│	 |	            ├── values.yaml          # Список applications, repositories
+│	 |	            └── templates/
+│	 |                  ├── application.yaml
+│	 |                  └── repository.yaml
 │   │
 │   ├── screenshots/
 │   ├── outputs.tf
@@ -347,17 +366,23 @@ Terraform will authenticate through your terraform IAM user using the terraform 
 
 ## 🚀 How to Run
 
-This project provisions AWS infrastructure with Terraform (remote state in S3 + DynamoDB), then deploys a Django app to EKS with Helm.
-Infra and app deploys are separate: Terraform builds infra (incl. RDS PostgreSQL and a Kubernetes Secret django-db), Helm deploys the app using that secret and the image in ECR.
+This project provisions AWS infrastructure with Terraform (remote state in S3 + DynamoDB), installs Jenkins and Argo CD using Helm (via Terraform), builds Docker images via Jenkins, and deploys applications to EKS through Argo CD using GitOps.
 
-**Workflow**
+**The CI/CD flow now looks like this:**
 
-1. Create backend storage (S3 + DynamoDB) for Terraform remote state.
-2. Provision VPC, ECR, RDS (PostgreSQL), and EKS with Terraform.
-3. Let Terraform create a Kubernetes Secret `django-db` containing DB credentials.
-4. Build and push the Docker image to ECR.
-5. Deploy the Django app to EKS via Helm, using the `django-db` secret and the ECR image URL from Terraform outputs.
-6. (Optional) Install Metrics Server and validate HPA (Horizontal Pod Autoscaler).
+- Terraform → provisions infrastructure (VPC, EKS, RDS, ECR, Jenkins, Argo CD).
+- Jenkins → builds and pushes Docker images to ECR + updates Helm chart versions in Git.
+- Argo CD → watches the Git repository and automatically syncs updated Helm charts into EKS.
+
+### 0️⃣ Prerequisites
+
+Before running the full stack:
+
+- AWS CLI configured (profile = terraform)
+- kubectl installed
+- Terraform installed
+- Docker installed (for initial sanity checks)
+- GitHub repository accessible (public, or private with Jenkins credentials)
 
 ### 1️⃣ Comment out the backend
 
@@ -382,7 +407,7 @@ This step ensures that state is handled locally until backend resources are prov
 ### 2️⃣ Initialize and apply locally
 
 ```
-cd lesson-7
+cd lesson-8=9
 terraform init
 terraform validate
 
@@ -446,101 +471,131 @@ In AWS Console:
 S3 → you should see the file lab/terraform.tfstate in bucket terraform-state-bucket-a3f7d92c
 DynamoDB → table terraform-locks will briefly show a LockID during Terraform operations
 
-### 5️⃣ Configure access to the cluster
+### 5️⃣ Update the Django Chart With Your ECR URL (one-time step)
+
+`After Terraform finishes:
 
 ```bash
-aws eks update-kubeconfig --name "$(terraform output -raw eks_cluster_name)" --region eu-north-1 --profile terraform
+terraform output -raw ecr_repository_url
 ```
 
-```bash
-kubectl get nodes
-```
+Put this URL (example: 123456789012.dkr.ecr.eu-north-1.amazonaws.com/django-app) into:
 
-Expected output: **one or more nodes in Ready state.**
+lesson-8-9/charts/django-app/values.yaml:
 
-## 6️⃣ Build and push the Django image to ECR
+image:
+repository: "<your-ecr-url>"
+tag: "v1" # Jenkins will overwrite this
+pullPolicy: IfNotPresent
 
-Retrieve the repository URL:
-
-```bash
-$ECR_URL = terraform output -raw ecr_repository_url
-echo $ECR_URL
-```
-
-Build and push:
-
-```bash
-cd ../django
-$TAG = "v1"
-$IMAGE = $ECR_URL + ":" + $TAG
-echo $IMAGE
-docker build -t $IMAGE .
-aws ecr get-login-password --region eu-north-1 --profile terraform | docker login --username AWS --password-stdin $ECR_URL
-docker push $IMAGE
-```
-
-7️⃣ Deploy the Django app via Helm (uses Terraform secret)
-
-```bash
-cd ../lesson-7
-$repo = terraform output -raw ecr_repository_url
-cd ./charts/django-app
-helm upgrade --install django . --namespace default --create-namespace --set "image.repository=$repo" --set "image.tag=$TAG" -f values.yaml
+Commit changes:
 
 ```
-
-Check deployment status:
-
-```bash
-# get alb ip address and navigate to see django app is running
-$elb = kubectl -n default get svc django-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
-echo $elb
-kubectl get pods
-kubectl get svc
-kubectl get hpa
-kubectl get svc django-app
+git add .
+git commit -m "Set ECR image repository for Argo CD"
+git push
 ```
 
-✅ The Service should show TYPE = LoadBalancer and an external IP — open this IP in your browser to view the Django app.
+Argo CD now knows where the image will come from.
 
-8️⃣ (Optional) Install Metrics Server for HPA
+## 6️⃣ Configure Jenkins Credentials (GitHub PAT)
 
-If HPA targets show unknown, install Metrics Server:
+In Jenkins UI:
+
+Manage Jenkins → Credentials → Global → Add Credentials
+
+Type: Username + Password
+
+- Username = your GitHub username
+- Password = GitHub Personal Access Token (PAT)
+- ID = github-token
+
+This credential will be used in the Jenkins pipeline to push Helm chart updates back to Git.
+
+7️⃣ Jenkins: Trigger Initial Seed Job
+
+Terraform has already installed Jenkins and applied its JCasC configuration.
+
+Port-forward or use the LoadBalancer service:
 
 ```bash
-helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server
-helm repo update
-helm upgrade --install metrics-server metrics-server/metrics-server \
-  --namespace kube-system \
-  --set "args[0]=--kubelet-preferred-address-types=InternalIP" \
-  --set "args[1]=--kubelet-insecure-tls" \
-  --wait --timeout 5m
+kubectl -n jenkins get svc
 ```
 
-Validate:
+If LoadBalancer:
+
+Open URL → log in (admin credentials from Jenkins output).
+
+Run the Seed Job → it will generate the main pipeline:
 
 ```bash
-kubectl -n kube-system get deploy metrics-server
-kubectl top nodes
-kubectl top pods -n default
+django-ci-cd
+```
+
+8️⃣ Full CI Pipeline (Jenkinsfile Execution)
+
+When you run the django-ci-cd pipeline:
+
+Jenkins will automatically:
+
+- Build your Django Docker image using Kaniko
+- Tag it with $BUILD_NUMBER or another version
+- Push it to ECR
+- Clone your GitOps repo
+- Update:
+
+```
+charts/django-app/values.yaml → image.tag: "new-tag"
+```
+
+- Commit and push the change
+- Notify Argo CD via GitOps
+
+9️⃣ Argo CD Automatically Syncs the Updated Chart
+
+Get Argo CD URL:
+
+```bash
+kubectl -n argocd get svc argocd-server -o wide
+```
+
+If LoadBalancer is used:
+
+Open in browser → log in:
+
+Password (Terraform output):
+
+```bash
+terraform output -raw argo_cd_admin_password_hint
+```
+
+Argo CD will detect Git changes and automatically:
+
+- Pull the updated Helm chart
+- Update Deployment in EKS
+- Restart pods
+- Sync HPA, ConfigMap, Secrets, etc.
+
+Check rollout:
+
+```bash
+kubectl get pods -n default
+kubectl get svc -n default
+kubectl get deploy -n default
 kubectl get hpa -n default
 ```
 
-If TARGETS stay unknown, wait 1–2 minutes for metrics to populate.
-
-9️⃣ (Optional) Generate load to see scaling
+🔟 Validate the Application
 
 ```bash
-# port-forward to local and stress with ab or wrk
-kubectl -n default port-forward svc/django 8080:80 &
-ab -n 2000 -c 50 http://localhost:8080/
-kubectl -n default get hpa -w
+ELB=$(kubectl -n default get svc django-app \
+    -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+echo $ELB
 ```
 
-✅ Done.
-Infra is in Terraform (with remote state), DB creds are delivered via the django-db Kubernetes Secret created by Terraform, the app image comes from ECR, and the app is deployed by Helm independently of Terraform.
+Open the hostname in the browser → Django app should respond.
 
-9️⃣ Cleanup
+## Cleanup
 
 To delete the deployment and test again later:
 
