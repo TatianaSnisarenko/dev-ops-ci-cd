@@ -28,7 +28,7 @@ spec:
   }
 
   environment {
-    ECR_REPOSITORY = "YOUR_ECR_REPOSITORY_URL"
+    ECR_REPOSITORY = "989496898833.dkr.ecr.eu-north-1.amazonaws.com/lab-ecr"
     IMAGE_TAG      = "v1.0.${BUILD_NUMBER}"
 
     COMMIT_EMAIL = "jenkins@localhost"

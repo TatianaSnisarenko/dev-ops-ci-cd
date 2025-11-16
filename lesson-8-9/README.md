@@ -471,7 +471,7 @@ In AWS Console:
 S3 → you should see the file lab/terraform.tfstate in bucket terraform-state-bucket-a3f7d92c
 DynamoDB → table terraform-locks will briefly show a LockID during Terraform operations
 
-### 5️⃣ Update the Django Chart With Your ECR URL (one-time step)
+### 5️⃣ Update the Django Chart and Jenkinsfile With Your ECR URL (one-time step)
 
 `After Terraform finishes:
 
@@ -483,10 +483,19 @@ Put this URL (example: 123456789012.dkr.ecr.eu-north-1.amazonaws.com/django-app)
 
 lesson-8-9/charts/django-app/values.yaml:
 
+```bash
 image:
-repository: "<your-ecr-url>"
-tag: "v1" # Jenkins will overwrite this
-pullPolicy: IfNotPresent
+  repository: "<your-ecr-url>"
+  tag: "v1"
+  pullPolicy: IfNotPresent
+```
+
+\Jenkinsfile
+
+```bash
+ECR_REPOSITORY = "<your-ecr-url>"
+
+```
 
 Commit changes:
 
@@ -535,7 +544,13 @@ This credential will be used in the Jenkins pipeline to push Helm chart updates 
 
 7️⃣ Jenkins: Trigger Initial Seed Job
 
-У Jenkins → Dashboard → Jobs: seed-job start manually with Build Now
+In Jenkins → Dashboard → Jobs: seed-job start manually with Build Now
+
+If seed job fails - this may be caused by security reasons - you need to allow script running mannually:
+
+In Jenkins Dashboard -> Manage Jenkins -> ScriptApproval -> Approve script
+
+Re-run seed-job
 
 Terraform has already installed Jenkins and applied its JCasC configuration.
 
