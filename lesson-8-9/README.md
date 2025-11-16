@@ -542,7 +542,7 @@ Type: Username + Password
 
 This credential will be used in the Jenkins pipeline to push Helm chart updates back to Git.
 
-7️⃣ Jenkins: Trigger Initial Seed Job
+## 7️⃣ Jenkins: Trigger Initial Seed Job
 
 In Jenkins → Dashboard → Jobs: seed-job start manually with Build Now
 
@@ -570,7 +570,7 @@ Run the Seed Job → it will generate the main pipeline:
 django-ci-cd
 ```
 
-8️⃣ Full CI Pipeline (Jenkinsfile Execution)
+## 8️⃣ Full CI Pipeline (Jenkinsfile Execution)
 
 When you run the django-ci-cd pipeline:
 
@@ -589,22 +589,23 @@ charts/django-app/values.yaml → image.tag: "new-tag"
 - Commit and push the change
 - Notify Argo CD via GitOps
 
-9️⃣ Argo CD Automatically Syncs the Updated Chart
+## 9️⃣ Argo CD Automatically Syncs the Updated Chart
 
 Get Argo CD URL:
 
 ```bash
-kubectl -n argocd get svc argocd-server -o wide
+kubectl -n argocd get svc argo-cd-argocd-server  -o wide
 ```
 
 If LoadBalancer is used:
 
 Open in browser → log in:
-
+username: admin
 Password (Terraform output):
 
 ```bash
-terraform output -raw argo_cd_admin_password_hint
+kubectl -n argocd get secret argocd-initial-admin-secret -o go-template="{{.data.password | base64decode}}"
+
 ```
 
 Argo CD will detect Git changes and automatically:
@@ -626,9 +627,7 @@ kubectl get hpa -n default
 🔟 Validate the Application
 
 ```bash
-ELB=$(kubectl -n default get svc django-app \
-    -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-echo $ELB
+kubectl get svc -n default
 ```
 
 Open the hostname in the browser → Django app should respond.
@@ -729,11 +728,21 @@ Command should show no remaining resources.
 
 ![HPA](./screenshots/hpa.png)
 
+### 5. Jenkins
+
+![Jenkins](./screenshots/jenkins.png)
+
+![Seed Job](./screenshots/seed-job.png)
+
+![Django Ci Cd](./screenshots/django-ci-cd.png)
+
+### 6. Argo CD
+
+![Argo CD](./screenshots/argo_cd.png)
+
 ### 5. Django app
 
-![Alb address](./screenshots/alb_address.png)
-
-![Django app](./screenshots/django.png)
+![Django app](./screenshots/django-app.png)
 
 ## 🛡️ Best Practices
 
