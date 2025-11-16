@@ -64,7 +64,7 @@ spec:
               git clone https://$GIT_USERNAME:$GIT_PAT@${INFRA_REPO_URL#https://}
               cd dev-ops-ci-cd
 
-              cd charts/django-app
+              cd lesson-8-9/charts/django-app
 
               sed -i "s/^  tag: .*/  tag: $IMAGE_TAG/" values.yaml
 
