@@ -407,7 +407,7 @@ This step ensures that state is handled locally until backend resources are prov
 ### 2️⃣ Initialize and apply locally
 
 ```
-cd lesson-8=9
+cd lesson-8-9
 terraform init
 terraform validate
 
@@ -419,7 +419,7 @@ terraform plan -out=tfplan
 terraform apply tfplan
 ```
 
-✅ ✅ This creates:
+✅ This creates:
 
 - S3 bucket for state + DynamoDB table for locking
 - VPC (subnets, IGW/NAT, routes)
@@ -500,7 +500,28 @@ Argo CD now knows where the image will come from.
 
 ## 6️⃣ Configure Jenkins Credentials (GitHub PAT)
 
-In Jenkins UI:
+Get url
+
+```bash
+kubectl get svc jenkins -n jenkins
+```
+
+Copy host name and open in browser
+
+http://<цей-hostname>/
+
+Get password:
+
+```bash
+$pass64 = kubectl get secret jenkins -n jenkins -o jsonpath='{.data.jenkins-admin-password}'
+$bytes  = [System.Convert]::FromBase64String($pass64)
+$pass   = [System.Text.Encoding]::UTF8.GetString($bytes)
+$pass
+```
+
+Use login = admin and pass to login into Jenkins UI
+
+In Jenkins UI configure credentials:
 
 Manage Jenkins → Credentials → Global → Add Credentials
 
@@ -513,6 +534,8 @@ Type: Username + Password
 This credential will be used in the Jenkins pipeline to push Helm chart updates back to Git.
 
 7️⃣ Jenkins: Trigger Initial Seed Job
+
+У Jenkins → Dashboard → Jobs: seed-job start manually with Build Now
 
 Terraform has already installed Jenkins and applied its JCasC configuration.
 

@@ -19,11 +19,6 @@ output "cluster_certificate_authority_data" {
   description = "Base64-encoded cluster CA"
 }
 
-output "oidc_provider_arn" {
-  value       = module.eks.oidc_provider_arn
-  description = "OIDC provider ARN for IRSA"
-}
-
 output "cluster_security_group_id" {
   value       = module.eks.cluster_security_group_id
   description = "Cluster security group ID"
@@ -50,4 +45,25 @@ output "eks_access_entries_info" {
     admin_iam_arns = var.admin_iam_arns
   }
   description = "Who gets cluster-admin via Access Entries"
+}
+
+output "eks_cluster_endpoint" {
+  description = "EKS API endpoint for connecting to the cluster"
+  value       = data.aws_eks_cluster.this.endpoint
+}
+
+output "eks_cluster_name" {
+  description = "Name of the EKS cluster"
+  value       = data.aws_eks_cluster.this.name
+}
+
+
+output "oidc_provider_arn" {
+  description = "OIDC provider ARN for IRSA"
+  value       = local.oidc_provider_arn
+}
+
+output "oidc_provider_url" {
+  description = "OIDC issuer URL"
+  value       = local.oidc_issuer
 }

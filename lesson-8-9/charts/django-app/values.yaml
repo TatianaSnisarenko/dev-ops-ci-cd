@@ -2,8 +2,8 @@ nameOverride: ""
 fullnameOverride: ""
 
 image:
-  repository: ""
-  tag: ""
+  repository: "989496898833.dkr.ecr.eu-north-1.amazonaws.com/lab-ecr"
+  tag: "v1"
   pullPolicy: IfNotPresent
 
 replicaCount: 1
