@@ -44,7 +44,7 @@ spec:
           sh '''
             /kaniko/executor \
               --context ${WORKSPACE}/django \
-              --dockerfile ${WORKSPACE}/Dockerfile \
+              --dockerfile ${WORKSPACE}/django/Dockerfile \
               --destination=$ECR_REPOSITORY:$IMAGE_TAG \
               --cache=true \
               --insecure \
