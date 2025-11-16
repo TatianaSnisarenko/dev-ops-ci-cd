@@ -75,7 +75,9 @@ spec:
 
               git add values.yaml
               git commit -m "Update image tag to $IMAGE_TAG" || echo "Nothing to commit"
-              git push origin main
+              
+              cd ../..   
+              git push https://$GIT_USERNAME:$GIT_PAT@${INFRA_REPO_URL#https://} lesson-8-9
             '''
           }
         }
