@@ -64,9 +64,9 @@ spec:
               git clone https://$GIT_USERNAME:$GIT_PAT@${INFRA_REPO_URL#https://}
               cd dev-ops-ci-cd
 
-              git checkout lesson-8-9
+              git checkout lesson-db-module
 
-              cd lesson-8-9/charts/django-app
+              cd project/charts/django-app
 
               sed -i "s/^  tag: .*/  tag: $IMAGE_TAG/" values.yaml
 
@@ -77,7 +77,7 @@ spec:
               git commit -m "Update image tag to $IMAGE_TAG" || echo "Nothing to commit"
               
               cd ../..   
-              git push https://$GIT_USERNAME:$GIT_PAT@${INFRA_REPO_URL#https://} lesson-8-9
+              git push https://$GIT_USERNAME:$GIT_PAT@${INFRA_REPO_URL#https://} lesson-db-module
             '''
           }
         }

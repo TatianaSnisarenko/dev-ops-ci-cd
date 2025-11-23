@@ -1,0 +1,27 @@
+server:
+  service:
+    type: LoadBalancer
+    port: 443
+
+applications:
+  - name: django-app
+    namespace: default
+    project: default
+    source:
+      repoURL: https://github.com/TatianaSnisarenko/dev-ops-ci-cd.git
+      path: project/charts/django-app
+      targetRevision: lesson-db-module
+      helm:
+        valueFiles:
+          - values.yaml
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: default
+    syncPolicy:
+      automated:
+        prune: true
+        selfHeal: true
+
+repoConfig:
+  insecure: "true"
+  enableLfs: "true"
