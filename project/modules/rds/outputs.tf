@@ -1,11 +1,11 @@
 output "endpoint" {
   description = "Database endpoint (hostname)"
-  value = var.use_aurora ? aws_rds_cluster.aurora[0].endpoint : aws_db_instance.standard[0].address
+  value       = var.use_aurora ? aws_rds_cluster.aurora[0].endpoint : aws_db_instance.standard[0].address
 }
 
 output "port" {
   description = "Database port"
-  value = var.use_aurora ? aws_rds_cluster.aurora[0].port : aws_db_instance.standard[0].port
+  value       = var.use_aurora ? aws_rds_cluster.aurora[0].port : aws_db_instance.standard[0].port
 }
 
 output "db_name" {

@@ -23,11 +23,11 @@ resource "aws_db_parameter_group" "standard" {
 resource "aws_db_instance" "standard" {
   count = var.use_aurora ? 0 : 1
 
-  identifier              = var.name
-  engine                  = var.engine
-  engine_version          = var.engine_version
-  instance_class          = var.instance_class
-  allocated_storage       = var.allocated_storage
+  identifier        = var.name
+  engine            = var.engine
+  engine_version    = var.engine_version
+  instance_class    = var.instance_class
+  allocated_storage = var.allocated_storage
 
   db_name  = var.db_name
   username = var.username

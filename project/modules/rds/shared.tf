@@ -1,6 +1,6 @@
 # Subnet group (shared for RDS and Aurora)
 resource "aws_db_subnet_group" "default" {
-  name       = "${var.name}-subnet-group"
+  name = "${var.name}-subnet-group"
 
   # If the database is public — use public subnets, otherwise private subnets
   subnet_ids = var.publicly_accessible ? var.subnet_public_ids : var.subnet_private_ids

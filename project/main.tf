@@ -22,11 +22,11 @@ terraform {
       source  = "hashicorp/http"
       version = ">= 3.4.0"
     }
-    random = { 
-      source = "hashicorp/random"
-       version = ">= 3.5.0"
-        }
-    
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.5.0"
+    }
+
   }
 }
 
@@ -54,8 +54,8 @@ data "http" "my_ip" {
 }
 
 locals {
-  name        = var.cluster_name
-  my_ip_cidr  = "${chomp(data.http.my_ip.response_body)}/32"
+  name       = var.cluster_name
+  my_ip_cidr = "${chomp(data.http.my_ip.response_body)}/32"
 }
 
 
@@ -147,13 +147,13 @@ resource "helm_release" "metrics_server" {
 
   values = [
     yamlencode({
-      hostNetwork = { enabled = false }   # було true → зробимо false
+      hostNetwork = { enabled = false } # було true → зробимо false
       args = [
         "--kubelet-insecure-tls"
       ]
       resources = {
         limits   = { cpu = "100m", memory = "128Mi" }
-        requests = { cpu = "50m",  memory = "64Mi" }
+        requests = { cpu = "50m", memory = "64Mi" }
       }
       replicas = 1
     })
@@ -230,10 +230,10 @@ module "rds_postgres" {
 # Kubernetes Secret with DB creds for Django
 ############################################
 resource "kubernetes_secret_v1" "django_db" {
-  count    = var.create_db_secret ? 1 : 0
+  count = var.create_db_secret ? 1 : 0
   metadata {
-    name      = var.db_secret_name 
-    namespace = var.k8s_namespace  
+    name      = var.db_secret_name
+    namespace = var.k8s_namespace
   }
 
   data = {
@@ -268,9 +268,9 @@ resource "kubernetes_secret_v1" "django_db" {
 module "jenkins" {
   source = "./modules/jenkins"
 
-  cluster_name        = module.eks.cluster_name
-  oidc_provider_arn   = module.eks.oidc_provider_arn
-  oidc_provider_url   = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
+  cluster_name      = module.eks.cluster_name
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_provider_url = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
 
   providers = {
     aws        = aws

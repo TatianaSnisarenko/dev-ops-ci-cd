@@ -106,5 +106,5 @@ variable "cluster_endpoint_public_access" {
 variable "cluster_endpoint_public_access_cidrs" {
   description = "Allowed CIDRs for public EKS endpoint"
   type        = list(string)
-  default     = []  # значення підставимо у root-рівні
+  default     = [] # значення підставимо у root-рівні
 }
