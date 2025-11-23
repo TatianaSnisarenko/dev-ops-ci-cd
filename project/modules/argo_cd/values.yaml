@@ -9,8 +9,8 @@ applications:
     project: default
     source:
       repoURL: https://github.com/TatianaSnisarenko/dev-ops-ci-cd.git
-      path: lesson-8-9/charts/django-app
-      targetRevision: lesson-8-9
+      path: project/charts/django-app
+      targetRevision: lesson-db-module
       helm:
         valueFiles:
           - values.yaml

@@ -27,7 +27,7 @@ dev-ops-ci-cd/
 │   │   └── wsgi.py
 │   └── .env.example
 │
-├── lesson-8-9/
+├── project/
 │   ├── charts/
 │   │   └── django-app/
 │   │       ├── Chart.yaml
@@ -407,7 +407,7 @@ This step ensures that state is handled locally until backend resources are prov
 ### 2️⃣ Initialize and apply locally
 
 ```
-cd lesson-8-9
+cd project
 terraform init
 terraform validate
 
@@ -481,7 +481,7 @@ terraform output -raw ecr_repository_url
 
 Put this URL (example: 123456789012.dkr.ecr.eu-north-1.amazonaws.com/django-app) into:
 
-lesson-8-9/charts/django-app/values.yaml:
+project/charts/django-app/values.yaml:
 
 ```bash
 image:
