@@ -553,6 +553,7 @@ Argo CD now knows where the image will come from.
 Get url
 
 ```bash
+aws eks update-kubeconfig --name lab-eks --region eu-north-1 --profile terraform
 kubectl get svc jenkins -n jenkins
 ```
 
@@ -585,27 +586,13 @@ This credential will be used in the Jenkins pipeline to push Helm chart updates 
 
 ## 7️⃣ Jenkins: Trigger Initial Seed Job
 
-In Jenkins → Dashboard → Jobs: seed-job start manually with Build Now
+In Jenkins → Dashboard → Jobs: **seed-job** start manually with Build Now
 
 If seed job fails - this may be caused by security reasons - you need to allow script running mannually:
 
-In Jenkins Dashboard -> Manage Jenkins -> ScriptApproval -> Approve script
+In Jenkins Dashboard -> Manage Jenkins -> ScriptApproval -> **Approve script**
 
-Re-run seed-job
-
-Terraform has already installed Jenkins and applied its JCasC configuration.
-
-Port-forward or use the LoadBalancer service:
-
-```bash
-kubectl -n jenkins get svc
-```
-
-If LoadBalancer:
-
-Open URL → log in (admin credentials from Jenkins output).
-
-Run the Seed Job → it will generate the main pipeline:
+Re-run seed-job → **it will generate the main pipeline**:
 
 ```bash
 django-ci-cd
