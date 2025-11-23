@@ -180,10 +180,10 @@ resource "random_password" "rds_master" {
 module "rds_postgres" {
   source = "./modules/rds"
 
-  # Базове ім'я для БД
+  # Base name
   name = "${var.cluster_name}-db"
 
-  # Архітектура
+  # Architecture
   use_aurora = false
 
   # --- RDS-only ---
@@ -197,7 +197,7 @@ module "rds_postgres" {
   # parameter_group_family_aurora = "aurora-postgresql15"
   # aurora_replica_count       = 1
 
-  # --- Спільні параметри ---
+  # --- Shared parameters ---
   instance_class    = "db.t3.micro"
   allocated_storage = 20
 
@@ -213,7 +213,7 @@ module "rds_postgres" {
   multi_az            = false
 
   vpc_cidr_block          = var.vpc_cidr_block
-  backup_retention_period = "7"
+  backup_retention_period = "0"
 
   parameters = {
     max_connections            = "200"

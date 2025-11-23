@@ -704,7 +704,7 @@ module "rds_postgres" {
   multi_az            = false
 
   vpc_cidr_block          = var.vpc_cidr_block
-  backup_retention_period = "7"
+  backup_retention_period = "0"
 
   parameters = {
     max_connections            = "200"
@@ -748,7 +748,7 @@ module "rds_postgres" {
   publicly_accessible = false
   vpc_cidr_block      = var.vpc_cidr_block
 
-  backup_retention_period = "7"
+  backup_retention_period = "0"
 
   parameters = {
     max_connections            = "200"

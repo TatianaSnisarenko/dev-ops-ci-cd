@@ -135,7 +135,7 @@ variable "parameters" {
 variable "backup_retention_period" {
   description = "Number of days to retain automated backups (0 = disabled)"
   type        = string
-  default     = "7"
+  default     = "0"
 }
 
 variable "tags" {
