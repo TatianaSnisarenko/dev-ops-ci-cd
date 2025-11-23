@@ -6,6 +6,7 @@ This lesson provisions an EKS cluster with Terraform, pushes a Django Docker ima
 
 - Provision EKS in an existing VPC using Terraform modules.
 - Build and push the Django image to Amazon ECR.
+- Provision a PostgreSQL database using a **universal RDS module** (standard RDS instance or Aurora cluster via `use_aurora`).
 - Deploy the app with a Helm chart (Deployment, Service, ConfigMap, Secret, HPA).
 - Verify scaling with HPA (CPU-based).
 - (Bonus) Add Ingress + TLS via cert-manager.
@@ -99,6 +100,46 @@ dev-ops-ci-cd/
 └── README.md
 
 ```
+
+### 🗄️ Module: `rds` (Universal RDS / Aurora PostgreSQL)
+
+This module provisions the database layer for the Django application.
+
+It supports two modes controlled by the `use_aurora` flag:
+
+- `use_aurora = false` → **standard RDS instance** (`aws_db_instance`)
+- `use_aurora = true` → **Aurora PostgreSQL cluster** (`aws_rds_cluster` + `aws_rds_cluster_instance` writer + replicas)
+
+In both modes the module automatically creates:
+
+- **DB Subnet Group** (`aws_db_subnet_group`) — uses private or public subnets depending on `publicly_accessible`
+- **Security Group** (`aws_security_group`) — allows PostgreSQL port (5432) from the VPC CIDR
+- **Parameter Group**:
+  - `aws_db_parameter_group` for standard RDS
+  - `aws_rds_cluster_parameter_group` for Aurora
+
+#### Key inputs
+
+- `name` — base name for DB resources
+- `use_aurora` — switch between standard RDS and Aurora
+- `engine`, `engine_version`, `parameter_group_family_rds` — RDS engine settings (e.g. `postgres`, `17.2`, `postgres17`)
+- `engine_cluster`, `engine_version_cluster`, `parameter_group_family_aurora`, `aurora_replica_count` — Aurora engine settings (e.g. `aurora-postgresql`, `15.3`, `aurora-postgresql15`)
+- `instance_class`, `allocated_storage`, `multi_az`
+- `db_name`, `username`, `password`
+- `vpc_id`, `subnet_private_ids`, `subnet_public_ids`, `publicly_accessible`, `vpc_cidr_block`
+- `parameters` — `map(string)` with DB parameters (e.g. `max_connections`, `log_min_duration_statement`)
+- `backup_retention_period`, `tags`
+
+#### Outputs
+
+- `endpoint` — RDS instance address **or** Aurora cluster endpoint
+- `port` — database port
+- `db_name`
+- `master_username`
+- `master_password`
+- `security_group_id` — Security Group attached to the DB
+
+These outputs are used in the root module to create a Kubernetes Secret `django-db`, which injects DB connection settings into the Django application.
 
 ## ⚙️ Terraform Modules Overview
 
@@ -632,6 +673,90 @@ kubectl get svc -n default
 
 Open the hostname in the browser → Django app should respond.
 
+### 🔁 Switching from standard RDS to Aurora (optional)
+
+By default the configuration uses a **standard RDS PostgreSQL instance**:
+
+```hcl
+module "rds_postgres" {
+  source = "./modules/rds"
+
+  name       = "${var.cluster_name}-db"
+  use_aurora = false
+
+  engine                     = "postgres"
+  engine_version             = "17.2"
+  parameter_group_family_rds = "postgres17"
+
+  # shared settings
+  instance_class    = "db.t3.micro"
+  allocated_storage = 20
+
+  db_name  = var.db_name
+  username = var.db_username
+  password = random_password.rds_master.result
+
+  vpc_id             = module.vpc.vpc_id
+  subnet_private_ids = module.vpc.private_subnet_ids
+  subnet_public_ids  = module.vpc.public_subnet_ids
+
+  publicly_accessible = false
+  multi_az            = false
+
+  vpc_cidr_block          = var.vpc_cidr_block
+  backup_retention_period = "7"
+
+  parameters = {
+    max_connections            = "200"
+    log_min_duration_statement = "500"
+  }
+}
+```
+
+To switch this module to an Aurora PostgreSQL cluster, only a few values need to be changed:
+
+```hcl
+module "rds_postgres" {
+  source = "./modules/rds"
+
+  name       = "${var.cluster_name}-aurora"
+  use_aurora = true
+
+  # Aurora engine
+  engine_cluster             = "aurora-postgresql"
+  engine_version_cluster     = "15.3"
+  parameter_group_family_aurora = "aurora-postgresql15"
+  aurora_replica_count       = 1
+
+  # RDS engine settings are ignored when use_aurora = true
+  engine                     = "postgres"
+  engine_version             = "17.2"
+  parameter_group_family_rds = "postgres17"
+
+  # shared settings
+  instance_class    = "db.t3.medium"
+  allocated_storage = 20 # ignored by Aurora
+
+  db_name  = var.db_name
+  username = var.db_username
+  password = random_password.rds_master.result
+
+  vpc_id             = module.vpc.vpc_id
+  subnet_private_ids = module.vpc.private_subnet_ids
+  subnet_public_ids  = module.vpc.public_subnet_ids
+
+  publicly_accessible = false
+  vpc_cidr_block      = var.vpc_cidr_block
+
+  backup_retention_period = "7"
+
+  parameters = {
+    max_connections            = "200"
+    log_min_duration_statement = "500"
+  }
+}
+```
+
 ## Cleanup
 
 To delete the deployment and test again later:
@@ -755,9 +880,12 @@ Command should show no remaining resources.
 
 ## 🧠 Learning Outcomes
 
-- By completing this assignment, you will:
+By completing this assignment, you will:
+
 - Understand Terraform backend configuration and remote state management.
 - Learn how to organize infrastructure into reusable modules.
 - Practice creating AWS network resources (VPC, subnets, gateways).
 - Deploy and manage container registry resources (ECR).
-- Apply real-world infrastructure-as-code patterns used in professional DevOps workflows.
+- Provision a production-like PostgreSQL database using a **universal RDS module** with support for **Aurora**.
+- Integrate DB credentials into Kubernetes via Secrets and Helm charts.
+- Apply real-world infrastructure-as-code and GitOps patterns used in professional DevOps workflows.
