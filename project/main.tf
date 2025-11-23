@@ -191,7 +191,7 @@ module "rds_postgres" {
   engine_version             = "17.2"
   parameter_group_family_rds = "postgres17"
 
-  # --- Aurora-only (зараз не використовується) ---
+  # --- Aurora-only (not used right now) ---
   # engine_cluster             = "aurora-postgresql"
   # engine_version_cluster     = "15.3"
   # parameter_group_family_aurora = "aurora-postgresql15"
@@ -217,6 +217,8 @@ module "rds_postgres" {
 
   parameters = {
     max_connections            = "200"
+    log_statement              = "all"
+    work_mem                   = "4096"
     log_min_duration_statement = "500"
   }
 

@@ -853,9 +853,14 @@ Command should show no remaining resources.
 
 ![Argo CD](./screenshots/argo_cd.png)
 
-### 5. Django app
+### 7. Django app
 
 ![Django app](./screenshots/django-app.png)
+
+### 8. RDS
+
+![RDS](./screenshots/rds.png)
+![RDS](./screenshots/parameters.png)
 
 ## 🛡️ Best Practices
 

@@ -114,31 +114,31 @@ module "rds_aurora" {
 
 ## Main variables
 
-| Variable                      |         Type |        Default        | Description                                                                   |
-| ----------------------------- | -----------: | :-------------------: | ----------------------------------------------------------------------------- |
-| name                          |       string |           —           | Base name for the DB resources (used in identifiers / group names).           |
-| use_aurora                    |         bool |         false         | If true — create an Aurora cluster; if false — create a regular RDS instance. |
-| engine                        |       string |      "postgres"       | Engine for regular RDS (postgres, mysql, etc.).                               |
-| engine_version                |       string |        "17.2"         | Engine version for regular RDS.                                               |
-| parameter_group_family_rds    |       string |     "postgres17"      | Parameter group family for RDS.                                               |
-| engine_cluster                |       string |  "aurora-postgresql"  | Engine for Aurora (aurora-postgresql, aurora-mysql).                          |
-| engine_version_cluster        |       string |        "15.3"         | Engine version for Aurora.                                                    |
-| parameter_group_family_aurora |       string | "aurora-postgresql15" | Parameter group family for Aurora.                                            |
-| aurora_replica_count          |       number |           1           | Number of Aurora read-replica instances.                                      |
-| instance_class                |       string |     "db.t3.micro"     | Instance class for RDS / Aurora (db.t3.micro, db.t3.medium, ...).             |
-| allocated_storage             |       number |          20           | Storage size for regular RDS (GB). Ignored for Aurora.                        |
-| db_name                       |       string |           —           | Database name.                                                                |
-| username                      |       string |           —           | Database master/admin username.                                               |
-| password                      |       string |     — (sensitive)     | Database user password (sensitive).                                           |
-| vpc_id                        |       string |           —           | VPC ID where the database will be deployed.                                   |
-| subnet_private_ids            | list(string) |           —           | List of private subnet IDs for RDS/Aurora.                                    |
-| subnet_public_ids             | list(string) |           —           | List of public subnet IDs (used when publicly_accessible = true).             |
-| publicly_accessible           |         bool |         false         | Whether the instance should be publicly accessible.                           |
-| multi_az                      |         bool |         false         | Enable Multi-AZ for regular RDS.                                              |
-| vpc_cidr_block                |       string |           —           | VPC CIDR used in SG ingress (access to DB from the VPC).                      |
-| parameters                    |  map(string) |          {}           | Map of parameter group settings (e.g., max_connections).                      |
-| backup_retention_period       |       string |          "7"          | Number of days to retain automated backups (0 = disabled).                    |
-| tags                          |  map(string) |          {}           | Additional tags applied to all resources.                                     |
+| Variable                      |         Type |        Default        | Description                                                                       |
+| ----------------------------- | -----------: | :-------------------: | --------------------------------------------------------------------------------- |
+| name                          |       string |           —           | Base name for the DB resources (used in identifiers / group names).               |
+| use_aurora                    |         bool |         false         | If true — create an Aurora cluster; if false — create a regular RDS instance.     |
+| engine                        |       string |      "postgres"       | Engine for regular RDS (postgres, mysql, etc.).                                   |
+| engine_version                |       string |        "17.2"         | Engine version for regular RDS.                                                   |
+| parameter_group_family_rds    |       string |     "postgres17"      | Parameter group family for RDS.                                                   |
+| engine_cluster                |       string |  "aurora-postgresql"  | Engine for Aurora (aurora-postgresql, aurora-mysql).                              |
+| engine_version_cluster        |       string |        "15.3"         | Engine version for Aurora.                                                        |
+| parameter_group_family_aurora |       string | "aurora-postgresql15" | Parameter group family for Aurora.                                                |
+| aurora_replica_count          |       number |           1           | Number of Aurora read-replica instances.                                          |
+| instance_class                |       string |     "db.t3.micro"     | Instance class for RDS / Aurora (db.t3.micro, db.t3.medium, ...).                 |
+| allocated_storage             |       number |          20           | Storage size for regular RDS (GB). Ignored for Aurora.                            |
+| db_name                       |       string |           —           | Database name.                                                                    |
+| username                      |       string |           —           | Database master/admin username.                                                   |
+| password                      |       string |     — (sensitive)     | Database user password (sensitive).                                               |
+| vpc_id                        |       string |           —           | VPC ID where the database will be deployed.                                       |
+| subnet_private_ids            | list(string) |           —           | List of private subnet IDs for RDS/Aurora.                                        |
+| subnet_public_ids             | list(string) |           —           | List of public subnet IDs (used when publicly_accessible = true).                 |
+| publicly_accessible           |         bool |         false         | Whether the instance should be publicly accessible.                               |
+| multi_az                      |         bool |         false         | Enable Multi-AZ for regular RDS.                                                  |
+| vpc_cidr_block                |       string |           —           | VPC CIDR used in SG ingress (access to DB from the VPC).                          |
+| parameters                    |  map(string) |          {}           | Map of parameter group settings (e.g., max_connections, log_statement, work_mem). |
+| backup_retention_period       |       string |          "7"          | Number of days to retain automated backups (0 = disabled).                        |
+| tags                          |  map(string) |          {}           | Additional tags applied to all resources.                                         |
 
 ## Outputs
 
