@@ -164,7 +164,7 @@ resource "helm_release" "metrics_server" {
 
 
 ############################################
-# RDS PostgreSQL (module)
+# RDS PostgreSQL (universal module)
 ############################################
 
 resource "random_password" "rds_master" {
@@ -173,23 +173,57 @@ resource "random_password" "rds_master" {
   min_upper        = 1
   min_numeric      = 1
   min_special      = 1
-
   special          = true
   override_special = "!#$%&()*+,-.:;<=>?[]^_{|}~\\"
 }
 
-
 module "rds_postgres" {
-  source             = "./modules/rds"
-  cluster_name       = var.cluster_name
+  source = "./modules/rds"
+
+  # Базове ім'я для БД
+  name = "${var.cluster_name}-db"
+
+  # Архітектура
+  use_aurora = false
+
+  # --- RDS-only ---
+  engine                     = "postgres"
+  engine_version             = "17.2"
+  parameter_group_family_rds = "postgres17"
+
+  # --- Aurora-only (зараз не використовується) ---
+  # engine_cluster             = "aurora-postgresql"
+  # engine_version_cluster     = "15.3"
+  # parameter_group_family_aurora = "aurora-postgresql15"
+  # aurora_replica_count       = 1
+
+  # --- Спільні параметри ---
+  instance_class    = "db.t3.micro"
+  allocated_storage = 20
+
+  db_name  = var.db_name
+  username = var.db_username
+  password = random_password.rds_master.result
+
   vpc_id             = module.vpc.vpc_id
-  vpc_cidr_block     = var.vpc_cidr_block
-  private_subnet_ids = module.vpc.private_subnet_ids
+  subnet_private_ids = module.vpc.private_subnet_ids
+  subnet_public_ids  = module.vpc.public_subnet_ids
 
-  db_name         = var.db_name
-  master_username = var.db_username
-  master_password = random_password.rds_master.result
+  publicly_accessible = false
+  multi_az            = false
 
+  vpc_cidr_block          = var.vpc_cidr_block
+  backup_retention_period = "7"
+
+  parameters = {
+    max_connections            = "200"
+    log_min_duration_statement = "500"
+  }
+
+  tags = {
+    Environment = "dev"
+    Project     = var.cluster_name
+  }
 }
 
 ############################################

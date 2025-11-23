@@ -1,87 +1,56 @@
 ########################################
-# RDS PostgreSQL (private, simple)    #
+# Standard RDS Instance (PostgreSQL)
 ########################################
 
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 5.0"
+resource "aws_db_parameter_group" "standard" {
+  count       = var.use_aurora ? 0 : 1
+  name        = "${var.name}-rds-params"
+  family      = var.parameter_group_family_rds
+  description = "Standard RDS PG for ${var.name}"
+
+  dynamic "parameter" {
+    for_each = var.parameters
+    content {
+      name         = parameter.key
+      value        = parameter.value
+      apply_method = "pending-reboot"
     }
-    random = {
-      source  = "hashicorp/random"
-      version = ">= 3.6"
+  }
+
+  tags = var.tags
+}
+
+resource "aws_db_instance" "standard" {
+  count = var.use_aurora ? 0 : 1
+
+  identifier              = var.name
+  engine                  = var.engine
+  engine_version          = var.engine_version
+  instance_class          = var.instance_class
+  allocated_storage       = var.allocated_storage
+
+  db_name  = var.db_name
+  username = var.username
+  password = var.password
+
+  db_subnet_group_name   = aws_db_subnet_group.default.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+
+  multi_az                = var.multi_az
+  publicly_accessible     = var.publicly_accessible
+  backup_retention_period = var.backup_retention_period
+
+  parameter_group_name = aws_db_parameter_group.standard[0].name
+
+  deletion_protection = false
+  skip_final_snapshot = true
+  storage_encrypted   = true
+  apply_immediately   = true
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.name}-rds"
     }
-  }
-}
-
-resource "random_password" "master" {
-  length           = 20
-  special          = true
-  min_upper        = 2
-  min_lower        = 2
-  min_numeric      = 2
-  min_special      = 2
-  override_special = "!@#%^*-_=+?.,~"
-}
-
-
-resource "aws_db_subnet_group" "this" {
-  name       = "${var.cluster_name}-rds-subnets"
-  subnet_ids = var.private_subnet_ids
-  tags = {
-    Name = "${var.cluster_name}-rds-subnets"
-  }
-}
-
-resource "aws_security_group" "rds" {
-  name        = "${var.cluster_name}-rds-sg"
-  description = "Security group for RDS PostgreSQL"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    description = "PostgreSQL from VPC"
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr_block]
-  }
-
-  egress {
-    description = "All egress"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.cluster_name}-rds-sg"
-  }
-}
-
-
-resource "aws_db_instance" "this" {
-  identifier                 = "${var.cluster_name}-postgres"
-  engine                     = "postgres"
-  auto_minor_version_upgrade  = true
-  instance_class             = var.instance_class
-  allocated_storage          = var.allocated_storage
-  db_name                    = var.db_name
-  username                   = var.master_username
-  password                   = var.master_password
-  port                       = 5432
-
-  db_subnet_group_name       = aws_db_subnet_group.this.name
-  vpc_security_group_ids     = [aws_security_group.rds.id]
-  publicly_accessible        = false
-  multi_az                   = false
-  storage_encrypted          = true
-  deletion_protection        = false
-  skip_final_snapshot        = true
-  apply_immediately          = true
-
-  tags = {
-    Name = "${var.cluster_name}-postgres"
-  }
+  )
 }
