@@ -64,7 +64,7 @@ spec:
               git clone https://$GIT_USERNAME:$GIT_PAT@${INFRA_REPO_URL#https://}
               cd dev-ops-ci-cd
 
-              git checkout lesson-db-module
+              git checkout final-project
 
               cd project/charts/django-app
 
@@ -77,7 +77,7 @@ spec:
               git commit -m "Update image tag to $IMAGE_TAG" || echo "Nothing to commit"
               
               cd ../..   
-              git push https://$GIT_USERNAME:$GIT_PAT@${INFRA_REPO_URL#https://} lesson-db-module
+              git push https://$GIT_USERNAME:$GIT_PAT@${INFRA_REPO_URL#https://} final-project
             '''
           }
         }

@@ -1,15 +1,15 @@
-# 🧱 Lesson 7 — EKS + ECR + Helm + HPA (Django on AWS)
+# 🧱 Final Project — EKS + ECR + Helm + HPA (Django on AWS)
 
-This lesson provisions an EKS cluster with Terraform, pushes a Django Docker image to ECR, and deploys the app to the cluster via a Helm chart with Horizontal Pod Autoscaler (HPA).
+This runbook describes how to:
 
-## 🎯 Objectives
+- Deploy the full infrastructure with Terraform
+- Configure access to the EKS cluster
+- Validate Jenkins and Argo CD
+- Install and verify Prometheus + Grafana
+- Demonstrate CI/CD behavior
+- Safely destroy the environment
 
-- Provision EKS in an existing VPC using Terraform modules.
-- Build and push the Django image to Amazon ECR.
-- Provision a PostgreSQL database using a **universal RDS module** (standard RDS instance or Aurora cluster via `use_aurora`).
-- Deploy the app with a Helm chart (Deployment, Service, ConfigMap, Secret, HPA).
-- Verify scaling with HPA (CPU-based).
-- (Bonus) Add Ingress + TLS via cert-manager.
+It is intended for both the student (runner) and the mentor (reviewer).
 
 ## 🗂️ Project Structure
 
@@ -252,13 +252,14 @@ This guarantees repeatability and prevents concurrent state modifications.
 
 ##✅ Prerequisites
 
-- Terraform 1.13.x (or >= 1.9)
-- AWS CLI v2 configured with profile: terraform
-- kubectl (compatible with K8s 1.29)
-- Helm 3.x
-- Docker (to build & push image)
-- AWS Region: eu-north-1
-- AWS CLI profile: terraform
+- AWS account
+- Terraform installed (>= 1.9)
+- AWS CLI v2 installed and configured
+- kubectl installed
+- Helm v3 installed
+- Docker installed (for local image checks if needed)
+- IAM user `terraform` with required permissions
+- AWS CLI profile `terraform` configured
 
 Quick checks:
 
@@ -419,11 +420,14 @@ This project provisions AWS infrastructure with Terraform (remote state in S3 + 
 
 Before running the full stack:
 
-- AWS CLI configured (profile = terraform)
+- AWS account
+- Terraform installed (>= 1.9)
+- AWS CLI v2 installed and configured
 - kubectl installed
-- Terraform installed
-- Docker installed (for initial sanity checks)
-- GitHub repository accessible (public, or private with Jenkins credentials)
+- Helm v3 installed
+- Docker installed (for local image checks if needed)
+- IAM user `terraform` with required permissions
+- AWS CLI profile `terraform` configured
 
 ### 1️⃣ Comment out the backend
 
@@ -660,7 +664,57 @@ kubectl get svc -n default
 
 Open the hostname in the browser → Django app should respond.
 
-### 🔁 Switching from standard RDS to Aurora (optional)
+## 1️⃣1️⃣ Install Monitoring (Prometheus + Grafana)
+
+Note: Monitoring is set up manually using Helm (not via Terraform).
+
+Follow monitoring/README.ms in detail.
+
+Short version:
+
+### 1. Create namespace
+
+```bash
+kubectl create namespace monitoring
+```
+
+### 2. Install Prometheus
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install prometheus prometheus-community/prometheus --namespace monitoring
+```
+
+### 3. Install Grafana
+
+```bash
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm install grafana grafana/grafana --namespace monitoring --set adminPassword=admin123
+```
+
+Port-forward Grafana:
+
+```bash
+kubectl port-forward -n monitoring svc/grafana 3000:80
+```
+
+Open:
+
+http://localhost:3000
+
+Credentials:
+
+admin / admin123
+
+### 4. Configure Prometheus as a data source with URL:
+
+http://prometheus-server.monitoring.svc:80
+
+Import any Kubernetes/Prometheus dashboard to verify metrics.
+
+## 🔁 Switching from standard RDS to Aurora (optional)
 
 By default the configuration uses a **standard RDS PostgreSQL instance**:
 
@@ -750,7 +804,9 @@ To delete the deployment and test again later:
 
 ```bash
 kubectl delete app django-app -n argocd
-helm uninstall jenkins -n jenkins
+helm uninstall grafana -n monitoring
+helm uninstall prometheus -n monitoring
+kubectl delete namespace monitoring
 ```
 
 🧹 Proper teardown when using an S3 backend (with DynamoDB locking)
