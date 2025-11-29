@@ -75,7 +75,7 @@ controller:
                                   url("https://github.com/TatianaSnisarenko/dev-ops-ci-cd.git")
                                   credentials("github-token")
                                 }
-                                branches("lesson-db-module")
+                                branches("final-project")
                               }
                             }
                             scriptPath("Jenkinsfile")
