@@ -918,6 +918,28 @@ Command should show no remaining resources.
 ![RDS](./screenshots/rds.png)
 ![RDS](./screenshots/parameters.png)
 
+### 9. Get All checks
+
+Jenkins:
+![Jenkins](./screenshots/get-all-jenkins.png)
+
+ArgoCd:
+![ArgoCd](./screenshots/get-all-argocd.png)
+
+Monitoring:
+![Grafana](./screenshots/get-all-monitoring.png)
+
+### 10. Port Forwarding
+
+Jenkins:
+![Jenkins](./screenshots/forwarding-jenkins.png)
+
+ArgoCd:
+![ArgoCd](./screenshots/forwarding-argocd.png)
+
+Grafana:
+![Grafana](./screenshots/forwarding-grafana.png)
+
 ## 🛡️ Best Practices
 
 - Use a dedicated IAM user for Terraform with minimal permissions.

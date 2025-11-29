@@ -45,11 +45,11 @@ variable "min_size" {
 }
 variable "desired_size" {
   type    = number
-  default = 3
+  default = 4
 }
 variable "max_size" {
   type    = number
-  default = 3
+  default = 4
 }
 variable "disk_size" {
   type    = number
