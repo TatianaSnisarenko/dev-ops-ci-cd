@@ -10,7 +10,7 @@ applications:
     source:
       repoURL: https://github.com/TatianaSnisarenko/dev-ops-ci-cd.git
       path: project/charts/django-app
-      targetRevision: lesson-db-module
+      targetRevision: final-project
       helm:
         valueFiles:
           - values.yaml

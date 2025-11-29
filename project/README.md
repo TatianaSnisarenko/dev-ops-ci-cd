@@ -76,18 +76,18 @@ dev-ops-ci-cd/
 │   │       |   ├── values.yaml
 │   │       |   └── outputs.tf
 │   │       |
-│   |       └── argo_cd/             # ✅ Новий модуль для Helm-установки Argo CD
-│   |           ├── argo_cd.tf       # Helm release для Jenkins
-│   |           ├── variables.tf     # Змінні (версія чарта, namespace, repo URL тощо)
-│   |           ├── providers.tf     # Kubernetes+Helm.  переносимо з модуля jenkins
-│   |           ├── values.yaml      # Кастомна конфігурація Argo CD
-│   |           ├── outputs.tf       # Виводи (hostname, initial admin password)
-│	 |          └──charts/                  # Helm-чарт для створення app'ів
-│ 	 |	            ├── Chart.yaml
-│	 |	            ├── values.yaml          # Список applications, repositories
-│	 |	            └── templates/
-│	 |                  ├── application.yaml
-│	 |                  └── repository.yaml
+│   |       └── argo_cd/
+│   |           ├── argo_cd.tf
+│   |           ├── variables.tf
+│   |           ├── providers.tf
+│   |           ├── values.yaml
+│   |           ├── outputs.tf
+│   |           └──charts/
+│   |	            ├── Chart.yaml
+│	  |	            ├── values.yaml
+│	  |	            └── templates/
+│	  |                  ├── application.yaml
+│	  |                  └── repository.yaml
 │   │
 │   ├── screenshots/
 │   ├── outputs.tf
