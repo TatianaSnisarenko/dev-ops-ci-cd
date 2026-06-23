@@ -1,6 +1,8 @@
-# 🚀 Lesson 3 — Running install_dev_tools.sh on a Fresh EC2 (Ubuntu)
+# DevOps CI/CD Lab
 
-This guide explains how to set up and run the automated installation script for Docker, Docker Compose v2, Python (>= 3.9), and Django on a clean Ubuntu EC2 instance.
+Cloud-native engineering lab covering Docker, Terraform, AWS, Jenkins, Kubernetes-oriented deployment workflows, and application deployment practice.
+
+This repository collects hands-on infrastructure and deployment exercises, including Dockerized application runtime, Terraform-based AWS infrastructure, CI/CD pipelines, and Kubernetes deployment workflows.
 
 ---
 
