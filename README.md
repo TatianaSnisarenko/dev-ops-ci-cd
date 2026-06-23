@@ -1,8 +1,25 @@
 # DevOps CI/CD Lab
 
-Cloud-native engineering lab covering Docker, Terraform, AWS, Jenkins, Kubernetes-oriented deployment workflows, and application deployment practice.
+Cloud-native infrastructure and deployment project demonstrating Terraform-based AWS provisioning, Kubernetes application deployment, CI/CD automation, and GitOps workflows.
 
-This repository collects hands-on infrastructure and deployment exercises, including Dockerized application runtime, Terraform-based AWS infrastructure, CI/CD pipelines, and Kubernetes deployment workflows.
+## Highlights
+
+- AWS infrastructure provisioning with Terraform modules
+- Amazon EKS cluster deployment
+- Amazon ECR image registry
+- PostgreSQL database provisioning with reusable RDS/Aurora module
+- Jenkins CI/CD pipelines
+- Argo CD GitOps deployment workflows
+- Helm-based Kubernetes application deployment
+- Horizontal Pod Autoscaling (HPA)
+
+## Technologies
+
+Terraform • AWS • EKS • ECR • RDS • Docker • Kubernetes • Helm • Jenkins • Argo CD • PostgreSQL • GitOps
+
+---
+
+Detailed implementation, architecture, infrastructure modules, deployment workflow, and screenshots are available below.
 
 ---
 
